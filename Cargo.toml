@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Charmaine Ndolo <Charmaine.Ndolo@hu-berlin.de>"]
 license = "MIT"
+readme = "./README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
