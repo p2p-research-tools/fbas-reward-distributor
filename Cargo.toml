@@ -1,0 +1,14 @@
+[package]
+name = "fbas_node_influence"
+version = "0.1.0"
+edition = "2021"
+authors = ["Charmaine Ndolo <Charmaine.Ndolo@hu-berlin.de>"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fbas_analyzer = { path = "../fbas_analyzer" }
+hex = "0.4.3"
+structopt = "0.3.26"
+sha3 = "0.10.0"
