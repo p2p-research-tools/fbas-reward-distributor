@@ -81,13 +81,13 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
 
 /// Rank nodes using PageRank and return a sorted list of nodes
 fn compute_influence_w_page_rank(fbas: &Fbas) -> Vec<Score> {
-    get_scores_page_rank(fbas)
+    compute_page_rank_for_fbas(fbas)
 }
 
 /// Rank nodes using NodeRank and return a sorted list of nodes
 fn compute_influence_w_node_rank(fbas: &Fbas) -> Vec<Score> {
     let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-    get_scores_node_rank(&all_nodes, fbas)
+    compute_node_rank_for_fbas(&all_nodes, fbas)
 }
 
 /// Distribute the reward between nodes based on their contribution as calculated by a ranking
