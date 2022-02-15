@@ -3,15 +3,6 @@ use crate::*;
 use fbas_analyzer::{Fbas, NodeId, QuorumSet};
 use std::collections::{HashMap, HashSet};
 
-/// Algorithm to use when ranking nodes
-#[derive(Debug, PartialEq, Eq)]
-pub enum RankingAlg {
-    /// An adaptation of Google's PageRank
-    PageRank,
-    /// An extension of PageRank. See the function 'rank_nodes_using_node_rank' for more
-    NodeRank,
-}
-
 pub fn rank_nodes(fbas: &Fbas, ranking_algo: RankingAlg) -> Vec<Score> {
     let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
     if ranking_algo == RankingAlg::PageRank {
@@ -49,19 +40,6 @@ pub fn compute_node_rank_for_fbas(nodes: &[NodeId], fbas: &Fbas) -> Vec<Score> {
     nr_scores
 }
 
-/// Distribute rewards according to the ranking and return a map of NodeId, score, reward
-pub fn compute_reward_distribution(scores: &[Score], reward: f64) -> HashMap<NodeId, (Score, f64)> {
-    let mut rewards = HashMap::default();
-    let node_rank_sum: Score = scores.iter().map(|&v| v as f64).sum();
-    for (node, node_score) in scores.iter().enumerate() {
-        // normalise values nr/sum(nr)
-        let reward_factor = node_score / node_rank_sum;
-        let reward = reward_factor * reward;
-        rewards.insert(node, (scores[node], reward));
-    }
-    rewards
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,21 +59,6 @@ mod tests {
             pr_sum * node_weight,
             pr_sum * node_weight,
         ];
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn allocate_rewards_simple_fbas() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-        let reward = 1.0;
-        let noderanks = compute_node_rank_for_fbas(&all_nodes, &fbas);
-        let actual = compute_reward_distribution(&noderanks, reward);
-        let expected = HashMap::from([
-            (0, (noderanks[0], reward / 3.0)),
-            (1, (noderanks[1], reward / 3.0)),
-            (2, (noderanks[1], reward / 3.0)),
-        ]);
         assert_eq!(actual, expected);
     }
 }

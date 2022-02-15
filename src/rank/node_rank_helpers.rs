@@ -159,24 +159,24 @@ mod tests {
     fn level_of_nesting_in_top_level_quorum_set() {
         let mut quorum_set = flat_qset(&[0, 1], 3);
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3, 4], 2), flat_qset(&[4, 5, 6], 2)];
-        let expected = nodes_nesting_depth(&quorum_set, 0);
-        let actual = 1;
+        let actual = nodes_nesting_depth(&quorum_set, 0);
+        let expected = 1;
         assert_eq!(expected, actual);
     }
     #[test]
     fn level_of_nesting_in_inner_qourum_set() {
         let mut quorum_set = flat_qset(&[0, 1], 3);
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3, 4], 2), flat_qset(&[4, 5, 6], 2)];
-        let expected = nodes_nesting_depth(&quorum_set, 3);
-        let actual = 2;
+        let actual = nodes_nesting_depth(&quorum_set, 3);
+        let expected = 2;
         assert_eq!(expected, actual);
     }
     #[test]
     fn node_nested_in_two_inner_sets() {
         let mut quorum_set = flat_qset(&[0, 1], 3);
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3, 4], 2), flat_qset(&[4, 5, 6], 2)];
-        let expected = nodes_nesting_depth(&quorum_set, 4);
-        let actual = 2;
+        let actual = nodes_nesting_depth(&quorum_set, 4);
+        let expected = 2;
         assert_eq!(expected, actual);
     }
     #[test]
