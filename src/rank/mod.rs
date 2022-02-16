@@ -1,5 +1,5 @@
 mod node_rank;
-mod node_rank_helpers;
+mod util;
 
 pub use node_rank::*;
-pub(crate) use node_rank_helpers::*;
+pub(crate) use util::*;
