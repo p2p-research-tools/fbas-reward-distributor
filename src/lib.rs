@@ -1,10 +1,14 @@
 pub mod dist;
 pub mod rank;
+pub mod types;
 
 pub use dist::*;
 pub use rank::*;
+pub use types::*;
 
 pub type Score = f64;
+
+pub type Coalition = fbas_analyzer::NodeIdSet;
 
 /// Algorithm to use when ranking nodes
 #[derive(Debug, PartialEq, Eq)]

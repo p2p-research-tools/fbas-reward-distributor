@@ -13,3 +13,5 @@ fbas_analyzer = { path = "../fbas_analyzer" }
 hex = "0.4.3"
 structopt = "0.3.26"
 sha3 = "0.10.0"
+bit-set = "0.5.2"
+itertools = "0.10.3"

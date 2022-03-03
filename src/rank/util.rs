@@ -143,9 +143,33 @@ fn get_list_of_creators_for_quorum_set(
     creators
 }
 
+/// Implementation of the SSPI for one coalition
+/// coalition: BitSet of player IDs
+/// num_players: Total number of players in the game
+/// fact_total: Factorial of total number of players in the game
+pub(crate) fn ss_probability_for_one_coalition(
+    coalition: &Coalition,
+    num_players: usize,
+    fact_total: u128,
+) -> Score {
+    let set_size = CooperativeGame::coalitions_cardinatily(coalition);
+    let set_size_minus_one_factorial = n_factorial((set_size - 1) as u128);
+    let n_minus_set_size_factorial = n_factorial((num_players - set_size) as u128);
+    (set_size_minus_one_factorial * n_minus_set_size_factorial) as Score / fact_total as Score
+}
+
+pub(crate) fn n_factorial(n: u128) -> u128 {
+    let mut factorial = 1;
+    for i in 2..n {
+        factorial *= i;
+    }
+    factorial * n
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bit_set::BitSet;
     use std::path::Path;
 
     fn flat_qset(validators: &[NodeId], threshold: usize) -> QuorumSet {
@@ -268,6 +292,23 @@ mod tests {
             &pr_scores,
         );
         let expected = 0.01125; // calculated by self
+        assert_eq!(expected, actual);
+    }
+    #[test]
+    fn factorial() {
+        let n = 3;
+        let actual = n_factorial(n);
+        let expected = 6;
+        assert_eq!(expected, actual);
+    }
+    #[test]
+    // Example from thesis
+    fn index_for_one_set() {
+        let coalition = bitset![0, 1];
+        let num_players = 3;
+        let total_factorial = 6;
+        let actual = ss_probability_for_one_coalition(&coalition, num_players, total_factorial);
+        let expected = 1.0 / 6.0;
         assert_eq!(expected, actual);
     }
 }
