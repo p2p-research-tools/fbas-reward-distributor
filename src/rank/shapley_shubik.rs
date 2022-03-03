@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 impl<'a> CooperativeGame<'a> {
     /// Calculates the Shapley-Shubik Index for the players of the game
+    /// Returns a list of scores with 0 = node 0's score
     /// A coalition is winning if it is a quorum in the FBAS, losing otherwise
     /// See C. Ndolo Master's thesis for details
     pub fn compute_ss_power_index_for_game(&self) -> Vec<Score> {
@@ -83,6 +84,7 @@ impl<'a> CooperativeGame<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fbas_analyzer::{bitset, Fbas};
     use std::collections::HashMap;
     use std::path::Path;
 

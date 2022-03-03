@@ -1,3 +1,3 @@
 mod game;
 
-pub use game::*;
+pub(crate) use game::*;

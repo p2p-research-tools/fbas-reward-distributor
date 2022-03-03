@@ -1,11 +1,12 @@
 use fbas_analyzer::*;
-use fbas_node_influence::*;
+use fbas_reward_distributor::*;
 
 use structopt::StructOpt;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+/// Rank nodes of an FBAS and allocate rewards to them accordingly
 #[derive(Debug, StructOpt)]
 struct Cli {
     /// Path to JSON file describing the FBAS in stellarbeat.org "nodes" format.
@@ -17,48 +18,39 @@ struct Cli {
     #[structopt(short = "i", long = "ignore-inactive-nodes")]
     ignore_inactive_nodes: bool,
 
-    /// Compute allocation for reward of value.
-    #[structopt(short = "d", long = "distribute ")]
-    total_reward: Option<f64>,
+    /// Amount to be shared among the nodes.
+    #[structopt(short = "r", long = "reward")]
+    total_reward: f64,
+
+    /// Ranking algorithm to use.
+    #[structopt(short = "a", long = "algorithm")]
+    alg: RankingAlg,
+
+    /// Only compute node rankings
+    #[structopt(long = "rank-only")]
+    _rank_only: bool,
 
     /// Identify nodes by their pretty name their public key. default is to use node IDs corresponding
     /// to indices in the input file.
     #[structopt(short = "p", long = "pretty")]
     pks: bool,
-
-    /// Scoring algorithm to use when ranking nodes.
-    #[structopt(subcommand)]
-    rank: RankingAlgConfig,
-}
-
-#[derive(Debug, StructOpt)]
-enum RankingAlgConfig {
-    /// Use a version of Google's PageRank
-    Pagerank,
-    /// Use an extension of PR (see implementation for details)
-    Noderank,
 }
 
 // TODO: NodeIDs -> PKs
 fn main() {
     let args = Cli::from_args();
+    let ranking_alg = args.alg;
+    let total_reward = args.total_reward;
     let fbas = load_fbas(args.nodes_path.as_ref(), args.ignore_inactive_nodes);
     let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-    let ranks = match args.rank {
-        RankingAlgConfig::Pagerank => {
-            eprintln!("Using PageRank..");
-            compute_influence_w_page_rank(&fbas)
-        }
-        RankingAlgConfig::Noderank => {
-            eprintln!("Using NodeRank..");
-            compute_influence_w_node_rank(&node_ids, &fbas)
-        }
-    };
-    if let Some(reward) = args.total_reward {
-        println!("Reward value = {}", reward);
-        let allocation = distribute_rewards(&ranks, reward);
+    if total_reward > 0.0 {
+        println!("Reward value = {}", total_reward);
+        let allocation = distribute_rewards(ranking_alg, &node_ids, &fbas, args.total_reward);
         println!("Allocation {:?}", allocation);
-    };
+    } else {
+        eprintln!("Reward must be greater than 0!");
+        return;
+    }
     if args.pks {
         let _public_keys = to_public_keys(node_ids, &fbas);
     }
@@ -88,18 +80,21 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
     fbas
 }
 
-/// Rank nodes using PageRank and return a sorted list of nodes
-fn compute_influence_w_page_rank(fbas: &Fbas) -> Vec<Score> {
-    compute_page_rank_for_fbas(fbas)
-}
-
-/// Rank nodes using NodeRank and return a sorted list of nodes
-fn compute_influence_w_node_rank(all_nodes: &[NodeId], fbas: &Fbas) -> Vec<Score> {
-    compute_node_rank_for_fbas(all_nodes, fbas)
+/// Rank nodes using either S-S Power Index or NodeRank and return a sorted list of nodes
+fn compute_influence(fbas: &Fbas, alg: RankingAlg) -> Vec<Score> {
+    rank_nodes(fbas, alg)
 }
 
 /// Distribute the reward between nodes based on their contribution as calculated by a ranking
 /// algorithm
-fn distribute_rewards(node_scores: &[Score], reward_value: f64) -> HashMap<NodeId, (f64, Score)> {
-    compute_reward_distribution(node_scores, reward_value)
+fn distribute_rewards(
+    algo: RankingAlg,
+    nodes: &[NodeId],
+    fbas: &Fbas,
+    reward_value: f64,
+) -> HashMap<NodeId, (f64, Score)> {
+    match algo {
+        RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
+        RankingAlg::PowerIndex => game_theory_distribution(fbas, reward_value),
+    }
 }

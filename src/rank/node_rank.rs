@@ -3,15 +3,6 @@ use crate::*;
 use fbas_analyzer::{Fbas, NodeId, QuorumSet};
 use std::collections::{HashMap, HashSet};
 
-pub fn rank_nodes(fbas: &Fbas, ranking_algo: RankingAlg) -> Vec<Score> {
-    let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-    if ranking_algo == RankingAlg::PageRank {
-        compute_page_rank_for_fbas(fbas)
-    } else {
-        compute_node_rank_for_fbas(&all_nodes, fbas)
-    }
-}
-
 pub fn compute_page_rank_for_fbas(fbas: &Fbas) -> Vec<Score> {
     fbas.rank_nodes()
 }

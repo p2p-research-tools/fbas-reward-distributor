@@ -1,5 +1,5 @@
 [package]
-name = "fbas_node_influence"
+name = "fbas_reward_distributor"
 version = "0.1.0"
 edition = "2021"
 authors = ["Charmaine Ndolo <Charmaine.Ndolo@hu-berlin.de>"]
@@ -15,3 +15,4 @@ structopt = "0.3.26"
 sha3 = "0.10.0"
 bit-set = "0.5.2"
 itertools = "0.10.3"
+clap = "3.1.5"

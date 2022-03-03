@@ -40,7 +40,7 @@ pub(crate) fn map_quorum_sets_to_generators(fbas: &Fbas) -> HashMap<String, Hash
         let quorum_set = if let Some(qset) = fbas.get_quorum_set(*v) {
             qset
         } else {
-            QuorumSet::default()
+            QuorumSet::new_empty()
         };
         let quorum_set_hash = hex::encode(Sha3_256::digest(quorum_set.into_id_string().as_bytes()));
         if let Some(hash) = generators.get_mut(&quorum_set_hash) {
@@ -59,7 +59,7 @@ pub(crate) fn all_quorum_sets_containing_node(node_id: NodeId, fbas: &Fbas) -> H
         let quorum_set = if let Some(qset) = fbas.get_quorum_set(v) {
             qset
         } else {
-            QuorumSet::default()
+            QuorumSet::new_empty()
         };
         if quorum_set.contained_nodes().contains(node_id) {
             qsets_containting_node.insert(quorum_set.clone());
@@ -102,7 +102,7 @@ fn find_next_quorum_set_containing_node(quorum_set: &QuorumSet, node_id: NodeId)
             return set.clone();
         }
     }
-    QuorumSet::default()
+    QuorumSet::new_empty()
 }
 
 /// Counting starts at 1 and 0 means the node was not found in the quorum set.
@@ -169,7 +169,6 @@ pub(crate) fn n_factorial(n: u128) -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bit_set::BitSet;
     use std::path::Path;
 
     fn flat_qset(validators: &[NodeId], threshold: usize) -> QuorumSet {
@@ -219,7 +218,7 @@ mod tests {
     #[test]
     fn contained_in_sets_wont_panic_if_node_is_not_in_qsets() {
         let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        fbas.add_generic_node(QuorumSet::default());
+        fbas.add_generic_node(QuorumSet::new_empty());
         let node_id = 4;
         let actual = all_quorum_sets_containing_node(node_id, &fbas);
         let expected = HashSet::from([]);
@@ -244,7 +243,7 @@ mod tests {
     #[test]
     fn correct_generators_to_qset_map() {
         let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        fbas.add_generic_node(QuorumSet::default());
+        fbas.add_generic_node(QuorumSet::new_empty());
         let actual = map_quorum_sets_to_generators(&fbas);
         let expected = HashMap::from([
             (
@@ -261,7 +260,7 @@ mod tests {
     #[test]
     fn list_of_generators_for_quorum_set() {
         let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        fbas.add_generic_node(QuorumSet::default());
+        fbas.add_generic_node(QuorumSet::new_empty());
         let sets_generators_map = map_quorum_sets_to_generators(&fbas);
         let actual = get_list_of_creators_for_quorum_set(
             &fbas.get_quorum_set(0).unwrap(),
@@ -274,10 +273,10 @@ mod tests {
     // test case: same quorum set is created by two nodes with PR scores 0.01 and 0.02
     fn node_rank_from_paper_example() {
         let mut fbas = Fbas::new();
-        fbas.add_generic_node(QuorumSet::default());
+        fbas.add_generic_node(QuorumSet::new_empty());
         let mut quorum_set = flat_qset(&[0, 1], 3);
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3], 1)];
-        fbas.add_generic_node(QuorumSet::default());
+        fbas.add_generic_node(QuorumSet::new_empty());
         let node_two = fbas.add_generic_node(quorum_set.clone());
         let _ = fbas.add_generic_node(quorum_set);
 
