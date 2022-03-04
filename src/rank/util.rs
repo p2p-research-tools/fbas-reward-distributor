@@ -4,33 +4,6 @@ use fbas_analyzer::*;
 use sha3::{Digest, Sha3_256};
 use std::collections::{HashMap, HashSet};
 
-/// Given a node ID, returns the NodeRank score of the node
-/// all_quorum_sets_containing_node: List of quorum sets that contain node_id
-/// sets_to_generators: Map of quorum set hashes and a set of nodes that creates them
-/// pr_scores: All FBAS' nodes PR scores
-pub(crate) fn compute_node_rank(
-    node_id: NodeId,
-    qsets_containting_node: Option<&HashSet<QuorumSet>>,
-    sets_to_generators: &HashMap<String, HashSet<NodeId>>,
-    pr_scores: &[Score],
-) -> Score {
-    let mut node_rank: Score = Score::default();
-    match qsets_containting_node {
-        Some(involving_sets) => {
-            for set in involving_sets {
-                let creators = get_list_of_creators_for_quorum_set(set, sets_to_generators);
-                let pr_sum: Score = creators.iter().map(|&v| pr_scores[v] as Score).sum();
-                let quorum_set_weight = node_weight_in_quorum_set(node_id, set);
-                node_rank += pr_sum * quorum_set_weight;
-            }
-        }
-        None => {
-            eprintln!("Node {} not in quorum sets..", node_id);
-        }
-    }
-    node_rank
-}
-
 /// Iterates through all quorum sets and
 /// Returns a map of quorum set hashes and a list of nodes that created that quorum set
 pub(crate) fn map_quorum_sets_to_generators(fbas: &Fbas) -> HashMap<String, HashSet<NodeId>> {
@@ -74,7 +47,7 @@ fn qset_weight(quorum_set: &QuorumSet) -> f64 {
 }
 
 // funky a_k-1(Q, v) formula and implementation
-fn node_weight_in_quorum_set(node_id: NodeId, quorum_set: &QuorumSet) -> f64 {
+pub(crate) fn node_weight_in_quorum_set(node_id: NodeId, quorum_set: &QuorumSet) -> f64 {
     let mut weight = 1.0;
     let nesting_depth = nodes_nesting_depth(quorum_set, node_id);
     match nesting_depth {
@@ -128,7 +101,7 @@ fn is_in_qset(validators: &[NodeId], node: NodeId) -> bool {
 }
 
 /// Gets a map of quorum set hashes and node IDs returns the nodes that create the exact quorum set
-fn get_list_of_creators_for_quorum_set(
+pub(crate) fn get_list_of_creators_for_quorum_set(
     quorum_set: &QuorumSet,
     sets_to_nodes: &HashMap<String, HashSet<NodeId>>,
 ) -> HashSet<NodeId> {
@@ -267,30 +240,6 @@ mod tests {
             &sets_generators_map,
         );
         let expected = HashSet::from([0, 1, 2]);
-        assert_eq!(expected, actual);
-    }
-    #[test]
-    // test case: same quorum set is created by two nodes with PR scores 0.01 and 0.02
-    fn node_rank_from_paper_example() {
-        let mut fbas = Fbas::new();
-        fbas.add_generic_node(QuorumSet::new_empty());
-        let mut quorum_set = flat_qset(&[0, 1], 3);
-        quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3], 1)];
-        fbas.add_generic_node(QuorumSet::new_empty());
-        let node_two = fbas.add_generic_node(quorum_set.clone());
-        let _ = fbas.add_generic_node(quorum_set);
-
-        let qsets_to_nodes = map_quorum_sets_to_generators(&fbas);
-        let sets_containing_node = all_quorum_sets_containing_node(node_two, &fbas);
-        let pr_scores = [0.0, 0.0, 0.02, 0.01];
-
-        let actual = compute_node_rank(
-            node_two,
-            Some(&sets_containing_node),
-            &qsets_to_nodes,
-            &pr_scores,
-        );
-        let expected = 0.01125; // calculated by self
         assert_eq!(expected, actual);
     }
     #[test]
