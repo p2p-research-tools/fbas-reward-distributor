@@ -25,7 +25,8 @@ pub fn graph_theory_distribution(
 /// Distribute rewards proportionally to SS power index and return a map of NodeId, score, reward
 pub fn game_theory_distribution(fbas: &Fbas, reward: f64) -> HashMap<NodeId, (Score, f64)> {
     let mut rewards = HashMap::default();
-    let game = CooperativeGame::init_from_fbas(fbas);
+    let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+    let game = CooperativeGame::init_from_fbas(&all_nodes, fbas);
     let scores = game.compute_ss_power_index_for_game();
     for (node, node_score) in scores.iter().enumerate() {
         let share = node_score * reward;

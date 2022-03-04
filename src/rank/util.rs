@@ -132,11 +132,18 @@ pub(crate) fn ss_probability_for_one_coalition(
 }
 
 pub(crate) fn n_factorial(n: u128) -> u128 {
+    if n == 0 {
+        return 1;
+    }
     let mut factorial = 1;
     for i in 2..n {
         factorial *= i;
     }
     factorial * n
+}
+
+fn round_to_two_places(n: f64) -> f64 {
+    (n * 100.0).round() / 100.0
 }
 
 #[cfg(test)]
@@ -244,10 +251,12 @@ mod tests {
     }
     #[test]
     fn factorial() {
-        let n = 3;
-        let actual = n_factorial(n);
-        let expected = 6;
-        assert_eq!(expected, actual);
+        let numbers = vec![0, 1, 3];
+        let expected = vec![1, 1, 6];
+        for (i, n) in numbers.iter().enumerate() {
+            let actual = n_factorial(*n);
+            assert_eq!(expected[i], actual);
+        }
     }
     #[test]
     // Example from thesis
@@ -258,5 +267,12 @@ mod tests {
         let actual = ss_probability_for_one_coalition(&coalition, num_players, total_factorial);
         let expected = 1.0 / 6.0;
         assert_eq!(expected, actual);
+    }
+    #[test]
+    fn round() {
+        let pi = 3.1415926535897932384626433832;
+        let actual = round_to_two_places(pi);
+        let expected = 3.14;
+        assert_eq!(actual, expected);
     }
 }

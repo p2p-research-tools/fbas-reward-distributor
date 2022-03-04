@@ -21,6 +21,7 @@ impl<'a> CooperativeGame<'a> {
                 )
             })
             .collect();
+        println!("game players {:?}", self.players);
         power_indices
     }
 
@@ -84,7 +85,7 @@ impl<'a> CooperativeGame<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fbas_analyzer::{bitset, Fbas};
+    use fbas_analyzer::{bitset, Fbas, NodeId};
     use std::collections::HashMap;
     use std::path::Path;
 
@@ -133,11 +134,82 @@ mod tests {
     }
 
     #[test]
-    fn power_index_for_game() {
+    fn power_index_for_symmetric_game() {
         let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        let game = CooperativeGame::init_from_fbas(&fbas);
+        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
         let actual = game.compute_ss_power_index_for_game();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    // Infamous FBAS example with 5 nodes
+    fn power_index_for_game() {
+        let input = r#"[
+            {
+                "publicKey": "node0",
+                "quorumSet": {
+                    "threshold": 3,
+                    "validators": [
+                        "node0",
+                        "node1",
+                        "node2",
+                        "node3",
+                        "node4"
+                    ]
+                }
+            },
+            {
+                "publicKey": "node1",
+                "quorumSet": {
+                    "threshold": 3,
+                    "validators": [
+                        "node0",
+                        "node1",
+                        "node2"
+                    ]
+                }
+            },
+            {
+                "publicKey": "node2",
+                "quorumSet": {
+                    "threshold": 3,
+                    "validators": [
+                        "node0",
+                        "node1",
+                        "node2"
+                    ]
+                }
+            },
+            {
+                "publicKey": "node3",
+                "quorumSet": {
+                    "threshold": 3,
+                    "validators": [
+                        "node0",
+                        "node3",
+                        "node4"
+                    ]
+                }
+            },
+            {
+                "publicKey": "node4",
+                "quorumSet": {
+                    "threshold": 3,
+                    "validators": [
+                        "node0",
+                        "node3",
+                        "node4"
+                    ]
+                }
+            }]"#;
+        let fbas = Fbas::from_json_str(&input);
+        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
+        let expected = vec![4.0 / 15.0, 7.0 / 30.0, 7.0 / 30.0, 7.0 / 30.0, 7.0 / 30.0];
+        let actual = game.compute_ss_power_index_for_game();
+        println!("critical coalitions {:?}", game.players_critical_coalitions);
         assert_eq!(expected, actual);
     }
 }
