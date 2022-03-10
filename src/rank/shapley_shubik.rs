@@ -1,5 +1,7 @@
 use crate::*;
+use fbas_analyzer::NodeId;
 use itertools::Itertools;
+use rug::Integer;
 use std::collections::HashSet;
 
 impl<'a> CooperativeGame<'a> {
@@ -9,7 +11,7 @@ impl<'a> CooperativeGame<'a> {
     /// See C. Ndolo Master's thesis for details
     pub fn compute_ss_power_index_for_game(&self) -> Vec<Score> {
         let num_players = self.players.len();
-        let total_factorial = n_factorial(num_players as u128);
+        let total_factorial = n_factorial(num_players);
         let power_indices: Vec<Score> = self
             .players
             .iter()
@@ -17,11 +19,12 @@ impl<'a> CooperativeGame<'a> {
                 Self::compute_player_power_index(
                     self.players_critical_coalitions.get(&p),
                     num_players,
-                    total_factorial,
+                    total_factorial.clone(),
                 )
             })
             .collect();
-        println!("game players {:?}", self.players);
+        let sum: f64 = power_indices.iter().sum();
+        println!("sum {}", sum);
         power_indices
     }
 
@@ -31,31 +34,29 @@ impl<'a> CooperativeGame<'a> {
     fn compute_player_power_index(
         winning_coalitions: Option<&Vec<Coalition>>,
         num_players: usize,
-        total_factorial: u128,
+        total_factorial: Integer,
     ) -> Score {
         if let Some(critical_coalitions) = winning_coalitions {
             critical_coalitions
                 .iter()
-                .map(|w| ss_probability_for_one_coalition(w, num_players, total_factorial))
+                .map(|w| ss_probability_for_one_coalition(w, num_players, total_factorial.clone()))
                 .sum()
         } else {
             0.0
         }
     }
 
-    /// We construct the power set based on the number of players
+    /// We construct the power set based on the top tier
     /// If a coalition is a quorum, it is a winning coalition
-    pub(crate) fn find_winning_coalitions(&self, num_players: usize) -> HashSet<Coalition> {
-        let all_coalitions = (0..num_players).powerset().collect::<Vec<_>>();
-        let mut winning: HashSet<Coalition> = HashSet::new();
-        for s in all_coalitions {
-            let quorum = s.into_iter().collect();
-            if self.fbas.is_quorum(&quorum) {
-                winning.insert(quorum.clone());
-            }
-        }
-
-        winning
+    pub(crate) fn find_winning_coalitions(&self, top_tier: &HashSet<NodeId>) -> HashSet<Coalition> {
+        let all_coalitions = (top_tier.clone().into_iter()).powerset();
+        all_coalitions
+            .filter(|s| {
+                let quorum = s.clone().into_iter().collect();
+                fbas_analyzer::contains_quorum(&quorum, self.fbas)
+            })
+            .map(|s| s.into_iter().collect())
+            .collect()
     }
 
     /// Get a player's winning coalitions, i.e. the quorums that contain the player and lose quorum
@@ -85,6 +86,7 @@ impl<'a> CooperativeGame<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::*;
     use fbas_analyzer::{bitset, Fbas, NodeId};
     use std::collections::HashMap;
     use std::path::Path;
@@ -97,7 +99,7 @@ mod tests {
             players: fbas.all_nodes().iter().collect(),
             players_critical_coalitions: HashMap::default(),
         };
-        let actual = game.find_winning_coalitions(3);
+        let actual = game.find_winning_coalitions(&HashSet::from([0, 1, 2]));
         let expected = HashSet::from([
             bitset![0, 1],
             bitset![0, 2],
@@ -126,8 +128,8 @@ mod tests {
     fn single_players_ss_power_index() {
         let winning = vec![bitset![0, 1], bitset![0, 2]];
         let num_players = 3;
-        let factorial = 6;
-        let expected = 2.0 / 6.0;
+        let factorial = Integer::from(6);
+        let expected = 1.0 / 3.0;
         let actual =
             CooperativeGame::compute_player_power_index(Some(&winning), num_players, factorial);
         assert_eq!(expected, actual);
@@ -145,7 +147,7 @@ mod tests {
 
     #[test]
     // Infamous FBAS example with 5 nodes
-    fn power_index_for_game() {
+    fn power_index_for_game_in_paper() {
         let input = r#"[
             {
                 "publicKey": "node0",
@@ -207,9 +209,10 @@ mod tests {
         let fbas = Fbas::from_json_str(&input);
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
-        let expected = vec![4.0 / 15.0, 7.0 / 30.0, 7.0 / 30.0, 7.0 / 30.0, 7.0 / 30.0];
+        let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
         let actual = game.compute_ss_power_index_for_game();
-        println!("critical coalitions {:?}", game.players_critical_coalitions);
-        assert_eq!(expected, actual);
+        for (i, _) in expected.iter().enumerate() {
+            assert_relative_eq!(expected[i], actual[i]);
+        }
     }
 }

@@ -1,6 +1,6 @@
 use crate::Coalition;
 use fbas_analyzer::{Fbas, NodeId};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CooperativeGame<'a> {
@@ -22,7 +22,7 @@ impl<'a> CooperativeGame<'a> {
             players,
             players_critical_coalitions: HashMap::default(),
         };
-        let winning_coalitions = game.find_winning_coalitions(nodes.len());
+        let winning_coalitions = game.find_winning_coalitions(&Self::get_involved_nodes(game.fbas));
         let players_critical_coalitions = game
             .players
             .iter()
@@ -32,6 +32,18 @@ impl<'a> CooperativeGame<'a> {
             players_critical_coalitions,
             ..game
         }
+    }
+
+    fn get_involved_nodes(fbas: &Fbas) -> HashSet<NodeId> {
+        let min_quorums = fbas_analyzer::find_minimal_quorums(fbas);
+        let mut involved_nodes: HashSet<usize> = HashSet::default();
+        for outer in min_quorums {
+            for inner in outer.into_iter() {
+                involved_nodes.insert(inner);
+            }
+        }
+        println!("involved_nodes {:?}", involved_nodes);
+        involved_nodes
     }
 
     pub(crate) fn coalitions_cardinatily(coalition: &Coalition) -> usize {
@@ -44,6 +56,14 @@ mod tests {
     use super::*;
     use fbas_analyzer::bitset;
     use std::path::Path;
+
+    #[test]
+    fn mqs_contained_nodes() {
+        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let expected = HashSet::from([0, 1, 2]);
+        let actual = CooperativeGame::get_involved_nodes(&fbas);
+        assert_eq!(expected, actual);
+    }
 
     #[test]
     fn from_fbas_to_game() {
@@ -78,7 +98,7 @@ mod tests {
         }
     }
     #[test]
-    fn players_critical_sets_equals_nodes_quorums() {
+    fn players_critical_sets_equals_sets_with_quorums() {
         let input = r#"[
             {
                 "publicKey": "node0",
@@ -142,11 +162,19 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let expected = vec![
-            vec![bitset![0, 1, 2], bitset![0, 3, 4], bitset![0, 1, 2, 3, 4]],
-            vec![bitset![0, 1, 2], bitset![0, 1, 2, 3, 4]],
-            vec![bitset![0, 1, 2], bitset![0, 1, 2, 3, 4]],
-            vec![bitset![0, 3, 4], bitset![0, 1, 2, 3, 4]],
-            vec![bitset![0, 3, 4], bitset![0, 1, 2, 3, 4]],
+            vec![
+                bitset![0, 1, 2],
+                bitset![0, 3, 4],
+                bitset![0, 1, 2, 3],
+                bitset![0, 1, 2, 4],
+                bitset![0, 2, 3, 4],
+                bitset![0, 1, 3, 4],
+                bitset![0, 1, 2, 3, 4],
+            ],
+            vec![bitset![0, 1, 2], bitset![0, 1, 2, 3], bitset![0, 1, 2, 4]],
+            vec![bitset![0, 1, 2], bitset![0, 1, 2, 3], bitset![0, 1, 2, 4]],
+            vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
+            vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
         ];
         for player in game.players {
             let actual = game.players_critical_coalitions.get(&player).unwrap();

@@ -1,6 +1,7 @@
 use crate::*;
 
 use fbas_analyzer::*;
+use rug::Integer;
 use sha3::{Digest, Sha3_256};
 use std::collections::{HashMap, HashSet};
 
@@ -123,27 +124,33 @@ pub(crate) fn get_list_of_creators_for_quorum_set(
 pub(crate) fn ss_probability_for_one_coalition(
     coalition: &Coalition,
     num_players: usize,
-    fact_total: u128,
+    fact_total: Integer,
 ) -> Score {
     let set_size = CooperativeGame::coalitions_cardinatily(coalition);
-    let set_size_minus_one_factorial = n_factorial((set_size - 1) as u128);
-    let n_minus_set_size_factorial = n_factorial((num_players - set_size) as u128);
-    (set_size_minus_one_factorial * n_minus_set_size_factorial) as Score / fact_total as Score
+    let set_size_minus_one_factorial = n_factorial(set_size - 1);
+    let n_minus_set_size_factorial = n_factorial(num_players - set_size);
+    let dividend = set_size_minus_one_factorial * n_minus_set_size_factorial;
+    let gcd = dividend.clone().gcd(&fact_total);
+    let numerator = dividend / gcd.clone();
+    let denominator = fact_total / gcd;
+    // It's now safe to return to a primitive data type under the assumption that num/gcd <  denom/gcd and fits in 64 bits
+    numerator.to_f64() / denominator.to_f64()
 }
 
-pub(crate) fn n_factorial(n: u128) -> u128 {
+pub(crate) fn n_factorial(n: usize) -> Integer {
+    let n = n as u128;
     if n == 0 {
-        return 1;
+        return Integer::from(1);
     }
-    let mut factorial = 1;
+    let mut factorial = Integer::from(1);
     for i in 2..n {
         factorial *= i;
     }
     factorial * n
 }
 
-fn round_to_two_places(n: f64) -> f64 {
-    (n * 100.0).round() / 100.0
+pub(crate) fn round_to_three_places(n: f64) -> f64 {
+    f64::trunc(n * 1000.0).round() / 1000.0
 }
 
 #[cfg(test)]
@@ -260,10 +267,10 @@ mod tests {
     }
     #[test]
     // Example from thesis
-    fn index_for_one_set() {
+    fn power_index_for_one_set() {
         let coalition = bitset![0, 1];
         let num_players = 3;
-        let total_factorial = 6;
+        let total_factorial = Integer::from(6);
         let actual = ss_probability_for_one_coalition(&coalition, num_players, total_factorial);
         let expected = 1.0 / 6.0;
         assert_eq!(expected, actual);
@@ -271,8 +278,8 @@ mod tests {
     #[test]
     fn round() {
         let pi = 3.1415926535897932384626433832;
-        let actual = round_to_two_places(pi);
-        let expected = 3.14;
+        let actual = round_to_three_places(pi);
+        let expected = 3.141;
         assert_eq!(actual, expected);
     }
 }

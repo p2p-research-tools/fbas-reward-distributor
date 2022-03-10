@@ -66,6 +66,6 @@ mod tests {
             (1, (1.0 / 3.0, reward / 3.0)),
             (2, (1.0 / 3.0, reward / 3.0)),
         ]);
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 }

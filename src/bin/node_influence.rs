@@ -92,7 +92,7 @@ fn distribute_rewards(
     nodes: &[NodeId],
     fbas: &Fbas,
     reward_value: f64,
-) -> HashMap<NodeId, (f64, Score)> {
+) -> HashMap<NodeId, (Score, f64)> {
     match algo {
         RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
         RankingAlg::PowerIndex => game_theory_distribution(fbas, reward_value),

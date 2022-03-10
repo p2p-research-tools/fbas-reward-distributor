@@ -15,4 +15,7 @@ structopt = "0.3.26"
 sha3 = "0.10.0"
 bit-set = "0.5.2"
 itertools = "0.10.3"
-clap = "3.1.5"
+rug = "1.15.0"
+
+[dev-dependencies]
+approx = "0.5.1"

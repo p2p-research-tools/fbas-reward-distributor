@@ -51,7 +51,7 @@ fn compute_node_rank(
             eprintln!("Node {} not in quorum sets..", node_id);
         }
     }
-    node_rank
+    round_to_three_places(node_rank)
 }
 
 #[cfg(test)]
@@ -65,7 +65,7 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         // PR scores computed using the impl in rank.rs
         let pr_scores = fbas.rank_nodes();
-        let node_weight = 0.6666666666666666; // calculated manually
+        let node_weight = 0.666; // calculated manually
         let pr_sum: Score = pr_scores.iter().map(|&v| v as f64).sum();
         let actual = compute_node_rank_for_fbas(&all_nodes, &fbas);
         let expected = vec![
@@ -96,7 +96,7 @@ mod tests {
             &qsets_to_nodes,
             &pr_scores,
         );
-        let expected = 0.01125; // calculated by self
+        let expected = 0.011; // calculated by self
         assert_eq!(expected, actual);
     }
 }
