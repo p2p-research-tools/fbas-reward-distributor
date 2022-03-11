@@ -2,22 +2,29 @@ use crate::*;
 use fbas_analyzer::NodeId;
 use itertools::Itertools;
 use rug::Integer;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 impl<'a> CooperativeGame<'a> {
     /// Calculates the Shapley-Shubik Index for the players of the game
     /// Returns a list of scores with 0 = node 0's score
     /// A coalition is winning if it is a quorum in the FBAS, losing otherwise
     /// See C. Ndolo Master's thesis for details
-    pub fn compute_ss_power_index_for_game(&self) -> Vec<Score> {
+    pub fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
         let num_players = self.players.len();
         let total_factorial = n_factorial(num_players);
+        let winning_coalitions =
+            self.find_winning_coalitions(&CooperativeGame::get_involved_nodes(self.fbas));
+        let players_critical_coalitions: HashMap<NodeId, Vec<Coalition>> = self
+            .players
+            .iter()
+            .map(|v| (*v, Self::player_is_critical(*v, &winning_coalitions)))
+            .collect();
         let power_indices: Vec<Score> = self
             .players
             .iter()
             .map(|&p| {
                 Self::compute_player_power_index(
-                    self.players_critical_coalitions.get(&p),
+                    players_critical_coalitions.get(&p),
                     num_players,
                     total_factorial.clone(),
                 )
@@ -88,7 +95,6 @@ mod tests {
     use super::*;
     use approx::*;
     use fbas_analyzer::{bitset, Fbas, NodeId};
-    use std::collections::HashMap;
     use std::path::Path;
 
     #[test]
@@ -97,7 +103,6 @@ mod tests {
         let game = CooperativeGame {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
-            players_critical_coalitions: HashMap::default(),
         };
         let actual = game.find_winning_coalitions(&HashSet::from([0, 1, 2]));
         let expected = HashSet::from([
@@ -141,7 +146,7 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
-        let actual = game.compute_ss_power_index_for_game();
+        let actual = game.compute_exact_ss_power_index_for_game();
         assert_eq!(expected, actual);
     }
 
@@ -210,7 +215,7 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
-        let actual = game.compute_ss_power_index_for_game();
+        let actual = game.compute_exact_ss_power_index_for_game();
         for (i, _) in expected.iter().enumerate() {
             assert_relative_eq!(expected[i], actual[i]);
         }

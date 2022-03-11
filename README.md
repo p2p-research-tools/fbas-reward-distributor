@@ -6,7 +6,7 @@ a Federated Byzantine Agreement Systems (FBASs) like
 
 ## 1. Required tools
 
-    - - A working [Rust](https://www.rust-lang.org) environment
+    - A working [Rust](https://www.rust-lang.org) environment
         - Install: https://www.rust-lang.org/tools/install
 
 ## 2. Build and run
@@ -17,7 +17,7 @@ cargo run --release -- -a alg -r reward fbas-path [-i]
     - fbas-path: Path to file describing the FBAS
     - -i: Ignore inactive nodes in the FBAS.
     - -a alg: algorithm to use to determine node rankings.
-    - -r reward`: reward value that is to be distributed
+    - -r reward: reward value that is to be distributed
 ```
 
 For example:
