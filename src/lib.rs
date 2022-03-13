@@ -16,7 +16,8 @@ use std::str::FromStr;
 pub enum RankingAlg {
     /// An extension of PageRank. See the function 'rank_nodes_using_node_rank' for more
     NodeRank,
-    PowerIndex,
+    ExactPowerIndex,
+    ApproxPowerIndex,
 }
 
 impl FromStr for RankingAlg {
@@ -24,7 +25,8 @@ impl FromStr for RankingAlg {
     fn from_str(alg: &str) -> Result<Self, Self::Err> {
         match alg.to_lowercase().as_ref() {
             "noderank" => Ok(RankingAlg::NodeRank),
-            "powerindex" => Ok(RankingAlg::PowerIndex),
+            "exact-powerindex" => Ok(RankingAlg::ExactPowerIndex),
+            "approx-powerindex" => Ok(RankingAlg::ApproxPowerIndex),
             _ => Err("Unknown algorithm"),
         }
     }

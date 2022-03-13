@@ -16,6 +16,7 @@ sha3 = "0.10.0"
 bit-set = "0.5.2"
 itertools = "0.10.3"
 rug = "1.15.0"
+rand = "0.8.5"
 
 [dev-dependencies]
 approx = "0.5.1"
