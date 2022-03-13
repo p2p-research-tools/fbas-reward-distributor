@@ -81,15 +81,17 @@ fn find_next_quorum_set_containing_node(quorum_set: &QuorumSet, node_id: NodeId)
 
 /// Counting starts at 1 and 0 means the node was not found in the quorum set.
 /// If a node is in multiple sets, its first level is returned
-/// For now this only works for one level on nesting - recursion?
 fn nodes_nesting_depth(quorum_set: &QuorumSet, node: NodeId) -> usize {
     let mut level = 0;
     if is_in_qset(&quorum_set.validators, node) {
         level += 1;
     } else {
-        for inner_quorum_set in quorum_set.inner_quorum_sets.iter() {
-            if is_in_qset(&inner_quorum_set.validators, node) {
-                level += 2;
+        // if a node is in the xth inner set of this inner qset, it means its in x+1st level in the whole quorum set
+        for inner in quorum_set.inner_quorum_sets.iter() {
+            // check before incrementing in case node wasn't found
+            let depth = depth_in_inner_sets(inner, node);
+            if depth != 0 {
+                level += depth + 1;
                 break;
             }
         }
@@ -99,6 +101,26 @@ fn nodes_nesting_depth(quorum_set: &QuorumSet, node: NodeId) -> usize {
 
 fn is_in_qset(validators: &[NodeId], node: NodeId) -> bool {
     validators.iter().any(|&validator| validator == node)
+}
+
+fn depth_in_inner_sets(inner_quorum_set: &QuorumSet, node: NodeId) -> usize {
+    let mut depth = 0;
+    // 1 means it was found in the validators set, 0 wasn't found
+    if is_in_qset(&inner_quorum_set.validators, node) {
+        depth += 1;
+        return depth;
+    } else {
+        depth += 1;
+        for (idx, inner) in inner_quorum_set.inner_quorum_sets.iter().enumerate() {
+            if is_in_qset(&inner.validators, node) {
+                // idx + 1 because the counter starts at 0
+                // add depth to that to get the level in this quorum set
+                depth += idx + 1;
+                break;
+            }
+        }
+    }
+    depth
 }
 
 /// Gets a map of quorum set hashes and node IDs returns the nodes that create the exact quorum set
@@ -177,7 +199,11 @@ mod tests {
     fn level_of_nesting_in_inner_qourum_set() {
         let mut quorum_set = flat_qset(&[0, 1], 3);
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3, 4], 2), flat_qset(&[4, 5, 6], 2)];
-        let actual = nodes_nesting_depth(&quorum_set, 3);
+        let actual = depth_in_inner_sets(&quorum_set.inner_quorum_sets[0], 3);
+        let expected = 1;
+        assert_eq!(expected, actual);
+        quorum_set.inner_quorum_sets[1].inner_quorum_sets = vec![flat_qset(&[7, 8], 2)];
+        let actual = depth_in_inner_sets(&quorum_set.inner_quorum_sets[1], 7);
         let expected = 2;
         assert_eq!(expected, actual);
     }
@@ -187,6 +213,15 @@ mod tests {
         quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3, 4], 2), flat_qset(&[4, 5, 6], 2)];
         let actual = nodes_nesting_depth(&quorum_set, 4);
         let expected = 2;
+        assert_eq!(expected, actual);
+    }
+    #[test]
+    fn node_nested_beyond_second_inner_set() {
+        let mut quorum_set = flat_qset(&[0, 1], 3);
+        quorum_set.inner_quorum_sets = vec![flat_qset(&[2, 3], 2), flat_qset(&[1, 3], 2)];
+        quorum_set.inner_quorum_sets[0].inner_quorum_sets = vec![flat_qset(&[4, 5], 2)];
+        let actual = nodes_nesting_depth(&quorum_set, 4);
+        let expected = 3;
         assert_eq!(expected, actual);
     }
     #[test]
