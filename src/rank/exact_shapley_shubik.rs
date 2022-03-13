@@ -7,13 +7,12 @@ use std::collections::{HashMap, HashSet};
 impl<'a> CooperativeGame<'a> {
     /// Calculates the Shapley-Shubik Index for the players of the game
     /// Returns a list of scores with 0 = node 0's score
-    /// A coalition is winning if it is a quorum in the FBAS, losing otherwise
+    /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
     pub fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
         let num_players = self.players.len();
         let total_factorial = n_factorial(num_players);
-        let winning_coalitions =
-            self.find_winning_coalitions(&CooperativeGame::get_involved_nodes(self.fbas));
+        let winning_coalitions = self.find_winning_coalitions();
         let players_critical_coalitions: HashMap<NodeId, Vec<Coalition>> = self
             .players
             .iter()
@@ -53,11 +52,12 @@ impl<'a> CooperativeGame<'a> {
         }
     }
 
-    /// We construct the power set based on the top tier
-    /// If a coalition is a quorum, it is a winning coalition
-    pub(crate) fn find_winning_coalitions(&self, top_tier: &HashSet<NodeId>) -> HashSet<Coalition> {
-        let all_coalitions = (top_tier.clone().into_iter()).powerset();
+    /// We construct the power set based on the number of players
+    /// If a coalition contains a quorum, it is a winning coalition
+    pub(crate) fn find_winning_coalitions(&self) -> HashSet<Coalition> {
+        let all_coalitions = (0..self.players.len()).powerset();
         all_coalitions
+            .into_iter()
             .filter(|s| {
                 let quorum = s.clone().into_iter().collect();
                 fbas_analyzer::contains_quorum(&quorum, self.fbas)
@@ -104,7 +104,7 @@ mod tests {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
         };
-        let actual = game.find_winning_coalitions(&HashSet::from([0, 1, 2]));
+        let actual = game.find_winning_coalitions();
         let expected = HashSet::from([
             bitset![0, 1],
             bitset![0, 2],
@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[test]
-    fn power_index_for_symmetric_game() {
+    fn exact_power_index_for_symmetric_game() {
         let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     // Infamous FBAS example with 5 nodes
-    fn power_index_for_game_in_paper() {
+    fn exact_power_index_for_game_in_paper() {
         let input = r#"[
             {
                 "publicKey": "node0",

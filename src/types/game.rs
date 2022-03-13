@@ -1,6 +1,5 @@
 use crate::Coalition;
 use fbas_analyzer::{Fbas, NodeId};
-use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CooperativeGame<'a> {
@@ -18,17 +17,6 @@ impl<'a> CooperativeGame<'a> {
         Self { fbas, players }
     }
 
-    pub(crate) fn get_involved_nodes(fbas: &Fbas) -> HashSet<NodeId> {
-        let min_quorums = fbas_analyzer::find_minimal_quorums(fbas);
-        let mut involved_nodes: HashSet<usize> = HashSet::default();
-        for outer in min_quorums {
-            for inner in outer.into_iter() {
-                involved_nodes.insert(inner);
-            }
-        }
-        involved_nodes
-    }
-
     pub(crate) fn coalitions_cardinatily(coalition: &Coalition) -> usize {
         coalition.len()
     }
@@ -39,14 +27,6 @@ mod tests {
     use super::*;
     use fbas_analyzer::bitset;
     use std::path::Path;
-
-    #[test]
-    fn mqs_contained_nodes() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
-        let expected = HashSet::from([0, 1, 2]);
-        let actual = CooperativeGame::get_involved_nodes(&fbas);
-        assert_eq!(expected, actual);
-    }
 
     #[test]
     fn from_fbas_to_game() {
@@ -147,7 +127,7 @@ mod tests {
             vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
             vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
         ];
-        let winning = game.find_winning_coalitions(&CooperativeGame::get_involved_nodes(game.fbas));
+        let winning = game.find_winning_coalitions();
         let actual: Vec<Vec<Coalition>> = game
             .players
             .iter()
