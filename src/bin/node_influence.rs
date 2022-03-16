@@ -3,12 +3,54 @@ use fbas_reward_distributor::*;
 
 use structopt::StructOpt;
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Rank nodes of an FBAS and allocate rewards to them accordingly
 #[derive(Debug, StructOpt)]
+#[structopt(
+    name = "fbas_reward_distributor",
+    about = "Rank nodes of an FBAS and allocate rewards to them accordingly",
+    author = "Charmaine Ndolo"
+)]
 struct Cli {
+    #[structopt(subcommand)]
+    subcommand: Option<SubCommand>,
+}
+
+#[derive(Debug, StructOpt)]
+enum SubCommand {
+    Rank(RankCmds),
+    Distribute(DistCmds),
+}
+
+/// Rank only, do not compute a distribution
+#[derive(Debug, StructOpt)]
+#[structopt(author = "Charmaine Ndolo")]
+struct RankCmds {
+    /// Path to JSON file describing the FBAS in stellarbeat.org "nodes" format.
+    /// Will use STDIN if omitted.
+    nodes_path: Option<PathBuf>,
+
+    /// Ranking algorithm to use.
+    /// Options are 'noderank','exact-powerindex' or 'approx-powerindex'.
+    #[structopt(short = "a", long = "algorithm")]
+    alg: RankingAlg,
+
+    /// Prior to any analysis, filter out all nodes marked as `"active" == false` in the input
+    /// nodes JSON (the one at `nodes_path`).
+    #[structopt(short = "i", long = "ignore-inactive-nodes")]
+    ignore_inactive_nodes: bool,
+
+    /// Identify nodes by their public key.
+    /// Default is to use node IDs corresponding to indices in the input file.
+    #[structopt(short = "p", long = "pretty")]
+    pks: bool,
+}
+
+/// Compute a distribution based on ranking according to selected algorithm
+#[derive(Debug, StructOpt)]
+#[structopt(author = "Charmaine Ndolo")]
+struct DistCmds {
     /// Path to JSON file describing the FBAS in stellarbeat.org "nodes" format.
     /// Will use STDIN if omitted.
     nodes_path: Option<PathBuf>,
@@ -19,40 +61,64 @@ struct Cli {
     ignore_inactive_nodes: bool,
 
     /// Amount to be shared among the nodes.
-    #[structopt(short = "r", long = "reward")]
+    #[structopt(short = "r", long = "reward", default_value = "1")]
     total_reward: f64,
 
     /// Ranking algorithm to use.
+    /// Options are 'noderank','exact-powerindex' or 'approx-powerindex'.
     #[structopt(short = "a", long = "algorithm")]
     alg: RankingAlg,
 
-    /// Only compute node rankings
-    #[structopt(long = "rank-only")]
-    _rank_only: bool,
-
-    /// Identify nodes by their pretty name their public key. default is to use node IDs corresponding
-    /// to indices in the input file.
+    /// Identify nodes by their public key.
+    /// Default is to use node IDs corresponding to indices in the input file.
     #[structopt(short = "p", long = "pretty")]
     pks: bool,
 }
 
-// TODO: NodeIDs -> PKs
+fn extract_ranking_params(rank_cmd: RankCmds) -> (Option<PathBuf>, RankingAlg, bool, bool) {
+    (
+        rank_cmd.nodes_path,
+        rank_cmd.alg,
+        rank_cmd.ignore_inactive_nodes,
+        rank_cmd.pks,
+    )
+}
+
+fn extract_dist_params(dist_cmd: DistCmds) -> (Option<PathBuf>, RankingAlg, Reward, bool, bool) {
+    (
+        dist_cmd.nodes_path,
+        dist_cmd.alg,
+        dist_cmd.total_reward,
+        dist_cmd.ignore_inactive_nodes,
+        dist_cmd.pks,
+    )
+}
+
 fn main() {
-    let args = Cli::from_args();
-    let ranking_alg = args.alg;
-    let total_reward = args.total_reward;
-    let fbas = load_fbas(args.nodes_path.as_ref(), args.ignore_inactive_nodes);
-    let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-    if total_reward > 0.0 {
-        println!("Reward value = {}", total_reward);
-        let allocation = distribute_rewards(ranking_alg, &node_ids, &fbas, args.total_reward);
-        println!("Allocation {:?}", allocation);
-    } else {
-        eprintln!("Reward must be greater than 0!");
-        return;
-    }
-    if args.pks {
-        let _public_keys = to_public_keys(node_ids, &fbas);
+    let cli = Cli::from_args();
+    let (rank, dist) = match cli.subcommand {
+        Some(SubCommand::Rank(cmd)) => (Some(extract_ranking_params(cmd)), None),
+        Some(SubCommand::Distribute(cmd)) => (None, Some(extract_dist_params(cmd))),
+        None => {
+            println!("Invalid command. Exiting..");
+            return;
+        }
+    };
+    if let Some(rank_cmd) = rank {
+        let fbas = load_fbas(rank_cmd.0.as_ref(), rank_cmd.2);
+        let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        let alg = rank_cmd.1;
+        let use_pks = rank_cmd.3;
+        let rankings = compute_influence(&node_ids, &fbas, alg, use_pks);
+        println!("Rankings (NodeId, PK, score): {:?}", rankings);
+    } else if let Some(dist_cmd) = dist {
+        let fbas = load_fbas(dist_cmd.0.as_ref(), dist_cmd.3);
+        let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        let alg = dist_cmd.1;
+        let total_reward = dist_cmd.2;
+        let use_pks = dist_cmd.4;
+        let allocation = distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks);
+        println!("Rankings (NodeId, PK, Score, Reward): {:?}", allocation);
     }
 }
 
@@ -81,21 +147,29 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
 }
 
 /// Rank nodes using either S-S Power Index or NodeRank and return a sorted list of nodes
-fn compute_influence(fbas: &Fbas, alg: RankingAlg) -> Vec<Score> {
-    rank_nodes(fbas, alg)
+fn compute_influence(
+    node_ids: &[NodeId],
+    fbas: &Fbas,
+    alg: RankingAlg,
+    use_pks: bool,
+) -> Vec<NodeRanking> {
+    let rankings = rank_nodes(fbas, alg);
+    create_node_ranking_report(node_ids, rankings, fbas, use_pks)
 }
 
 /// Distribute the reward between nodes based on their contribution as calculated by a ranking
-/// algorithm
+/// algorithm and return a sorted list
 fn distribute_rewards(
     algo: RankingAlg,
     nodes: &[NodeId],
     fbas: &Fbas,
     reward_value: f64,
-) -> HashMap<NodeId, (Score, f64)> {
-    match algo {
+    use_pks: bool,
+) -> Vec<(NodeId, PublicKey, Score, Reward)> {
+    let allocation = match algo {
         RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
         RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value),
         RankingAlg::ApproxPowerIndex => approx_game_theory_distribution(fbas, reward_value),
-    }
+    };
+    create_reward_report(allocation, fbas, use_pks)
 }

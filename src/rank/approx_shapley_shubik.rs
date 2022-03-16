@@ -124,7 +124,6 @@ mod tests {
     #[test]
     fn generate_correct_samples() {
         let actual = generate_sample_permutations(6, 3);
-        println!("actual {:?}", actual);
         assert!(actual.len() == 6);
     }
 

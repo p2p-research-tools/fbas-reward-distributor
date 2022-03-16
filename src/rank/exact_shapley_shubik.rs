@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 impl<'a> CooperativeGame<'a> {
     /// Calculates the Shapley-Shubik Index for the players of the game
-    /// Returns a list of scores with 0 = node 0's score
+    /// Returns a list of scores with index 0 = node 0's score
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
     pub fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
@@ -29,8 +29,6 @@ impl<'a> CooperativeGame<'a> {
                 )
             })
             .collect();
-        let sum: f64 = power_indices.iter().sum();
-        println!("sum {}", sum);
         power_indices
     }
 

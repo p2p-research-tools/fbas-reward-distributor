@@ -66,7 +66,7 @@ mod tests {
         // PR scores computed using the impl in rank.rs
         let pr_scores = fbas.rank_nodes();
         let node_weight = 0.666; // calculated manually
-        let pr_sum: Score = pr_scores.iter().map(|&v| v as f64).sum();
+        let pr_sum: Score = pr_scores.iter().map(|&v| v as Score).sum();
         let actual = compute_node_rank_for_fbas(&all_nodes, &fbas);
         let expected = vec![
             pr_sum * node_weight,
