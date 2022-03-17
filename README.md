@@ -15,14 +15,16 @@ Compilation and execution can be achieved in a single step as shown below
 ```
 cargo run --release -- SUBCOMMAND where subcommand is either 'distribute' or 'rank'.
 
-cargo run --release -- distribute -a alg -r reward -p -i fbas-path
+cargo run --release -- distribute -a alg -r reward -s -p -i fbas-path
     - -a alg: algorithm to use to determine node rankings, can be 'noderank', 'exact-powerindex' or 'approx-powerindex'. Must be passed.
     - -r reward: reward value that is to be distributed. Default = 1.
+    - -s number of samples: the number of samples that should be used when approximation the SS power index.
+        Required when '-a approx-powerindex' is passed and ignored otherwise.
     - -p: Include the nodes' public keys in the output. Default = false.
     - fbas-path: Path to file describing the FBAS. If no path is passed, the program will attempt to read from the command line..
     - -i: Ignore inactive nodes in the FBAS. Default = false.
 
-The `rank` subcommand works in the same way except that -r is omitted without a default value.
+The `rank` subcommand works in the same way except that -r is omitted.
 ```
 
 ## Computing a distribution for an FBAS
@@ -46,7 +48,7 @@ The exact implementation computes the players' exact Shapley-Shubik indices via 
 As an alternative, we provide an polynomial time approximation implementation using [Castro et al.'s algorithm](https://www.sciencedirect.com/science/article/abs/pii/S0305054808000804) based on sampling. 
 
 ```
-cargo run --release -- distribute -a approx-powerindex -r 10 test_data/mobilecoin_nodes_2021-10-22.json
+cargo run --release -- rank -a approx-powerindex -s 1000 -r 10 test_data/mobilecoin_nodes_2021-10-22.json
 ```
 
 The output is a sorted list of tuples: (NodeID, Public Key (where available), Ranking, Reward).

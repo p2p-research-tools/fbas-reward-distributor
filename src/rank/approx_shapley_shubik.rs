@@ -10,9 +10,8 @@ impl<'a> CooperativeGame<'a> {
     /// sampling).
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
-    pub fn compute_approx_ss_power_index_for_game(&self) -> Vec<Score> {
+    pub fn compute_approx_ss_power_index_for_game(&self, num_samples: usize) -> Vec<Score> {
         let num_players = self.players.len();
-        let num_samples = num_samples_to_use(num_players);
         let sample_permutations = generate_sample_permutations(num_samples, num_players);
         let power_indices: Vec<Score> = self
             .players
@@ -93,33 +92,12 @@ fn generate_sample_permutations(no_samples: usize, no_players: usize) -> Vec<Vec
     }
 }
 
-/// Based on measurements by Castro et. al where 10^3 samples mostly had good enough estimates
-/// If num_players! <= 500 then use num_players! samples, otherwise 10^3 or 10^4
-fn num_samples_to_use(num_players: usize) -> usize {
-    match num_players {
-        // 6! = 720
-        0..=6 => n_factorial(num_players).to_usize().unwrap(),
-        7..=100 => 1000,
-        _ => 10000,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use approx::*;
     use fbas_analyzer::NodeId;
     use std::path::Path;
-
-    #[test]
-    fn num_of_samples() {
-        let actual = num_samples_to_use(6);
-        let expected = n_factorial(6).to_usize().unwrap();
-        assert_eq!(expected, actual);
-        let actual = num_samples_to_use(20);
-        let expected = 1000;
-        assert_eq!(expected, actual);
-    }
 
     #[test]
     fn generate_correct_samples() {
@@ -175,8 +153,9 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
+        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
-        let actual = game.compute_approx_ss_power_index_for_game();
+        let actual = game.compute_approx_ss_power_index_for_game(samples);
         for e in 0..expected.len() {
             assert_relative_eq!(expected[e], actual[e]);
         }
@@ -246,8 +225,9 @@ mod tests {
         let fbas = Fbas::from_json_str(&input);
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
+        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
-        let actual = game.compute_approx_ss_power_index_for_game();
+        let actual = game.compute_approx_ss_power_index_for_game(samples);
         for (i, _) in expected.iter().enumerate() {
             assert_relative_eq!(expected[i], actual[i]);
         }

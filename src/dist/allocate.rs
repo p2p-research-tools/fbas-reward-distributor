@@ -30,11 +30,12 @@ pub fn exact_game_theory_distribution(fbas: &Fbas, reward: Reward) -> Vec<(NodeI
 
 /// Distribute rewards proportionally to SS power index and return a map of NodeId, score, reward
 pub fn approx_game_theory_distribution(
+    num_samples: usize,
     fbas: &Fbas,
     reward: Reward,
 ) -> Vec<(NodeId, Score, Reward)> {
     let game = new_game_from_fbas(fbas);
-    let scores = game.compute_approx_ss_power_index_for_game();
+    let scores = game.compute_approx_ss_power_index_for_game(num_samples);
     allocate_reward_to_players(scores, reward)
 }
 
@@ -89,8 +90,9 @@ mod tests {
     #[test]
     fn allocate_rewards_simple_fbas_approx_powerindex() {
         let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
         let reward = 10.0;
-        let actual_rewards = approx_game_theory_distribution(&fbas, reward);
+        let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward);
         let expected_rewards = vec![
             (0, 1.0 / 3.0, reward / 3.0),
             (1, 1.0 / 3.0, reward / 3.0),
