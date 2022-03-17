@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn permutations_worth() {
         // U = {0, 1}, {0, 2}, {1, 2} {0, 1, 2}
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let predecessors = vec![vec![0, 1], vec![2, 1], vec![1, 2, 0], vec![1]];
         let players = [2, 0, 0, 2];
         let expected = [0, 0, 0, 1];
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn one_players_estimated_index() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let samples = generate_sample_permutations(3, 3);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
         let expected = 1.0 / 3.0;
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn players_estimated_index() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let samples = generate_sample_permutations(6, 3);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
         let expected = 1.0 / 3.0;
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn approx_power_index_for_symmetric_game() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();

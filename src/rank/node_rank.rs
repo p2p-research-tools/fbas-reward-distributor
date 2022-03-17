@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn node_rank_for_simple_symmetric_fbas() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         // PR scores computed using the impl in rank.rs
         let pr_scores = fbas.rank_nodes();

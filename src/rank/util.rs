@@ -226,7 +226,7 @@ mod tests {
     }
     #[test]
     fn contains_all_qsets_with_node() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
 
         let node_id = 0;
         let actual = all_quorum_sets_containing_node(node_id, &fbas);
@@ -239,7 +239,7 @@ mod tests {
     }
     #[test]
     fn contained_in_sets_wont_panic_if_node_is_not_in_qsets() {
-        let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let mut fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         fbas.add_generic_node(QuorumSet::new_empty());
         let node_id = 4;
         let actual = all_quorum_sets_containing_node(node_id, &fbas);
@@ -264,7 +264,7 @@ mod tests {
     }
     #[test]
     fn correct_generators_to_qset_map() {
-        let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let mut fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         fbas.add_generic_node(QuorumSet::new_empty());
         let actual = map_quorum_sets_to_generators(&fbas);
         let expected = HashMap::from([
@@ -281,7 +281,7 @@ mod tests {
     }
     #[test]
     fn list_of_generators_for_quorum_set() {
-        let mut fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let mut fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         fbas.add_generic_node(QuorumSet::new_empty());
         let sets_generators_map = map_quorum_sets_to_generators(&fbas);
         let actual = get_list_of_creators_for_quorum_set(

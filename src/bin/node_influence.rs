@@ -37,11 +37,7 @@ struct RankCmds {
     alg: RankingAlgConfig,
 
     /// Number of samples to use for approximation
-    #[structopt(
-        short = "s",
-        long = "samples",
-        required_if("alg", "RankingAlgConfig::ApproxPowerIndex")
-    )]
+    #[structopt(short = "s", long = "samples")]
     samples: Option<usize>,
 
     /// Prior to any analysis, filter out all nodes marked as `"active" == false` in the input
@@ -77,7 +73,7 @@ struct DistCmds {
     alg: RankingAlgConfig,
 
     /// Number of samples to use for approximation
-    #[structopt(short = "s", long = "samples", required_if("alg", "ApproxPowerIndex"))]
+    #[structopt(short = "s", long = "samples")]
     samples: Option<usize>,
 
     /// Identify nodes by their public key.

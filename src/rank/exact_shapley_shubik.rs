@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn all_winning_sets_in_fbas() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let game = CooperativeGame {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn exact_power_index_for_symmetric_game() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];

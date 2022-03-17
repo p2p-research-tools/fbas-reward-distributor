@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn allocate_rewards_simple_fbas_noderank() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let reward = 1.0;
         let noderanks = compute_node_rank_for_fbas(&all_nodes, &fbas);
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn allocate_rewards_simple_fbas_exact_powerindex() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let reward = 1.0;
         let actual = exact_game_theory_distribution(&fbas, reward);
         let expected = vec![
@@ -89,7 +89,7 @@ mod tests {
     }
     #[test]
     fn allocate_rewards_simple_fbas_approx_powerindex() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
         let reward = 10.0;
         let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward);

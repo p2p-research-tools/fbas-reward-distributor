@@ -7,7 +7,7 @@ fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("rank")
         .arg("-a")
         .arg("exact-powerindex")
-        .arg("test_data/correct_trivial.json");
+        .arg("test_data/trivial.json");
     cmd.assert().success().stdout(predicate::str::contains(
         "List of Rankings as (NodeId, PK, Score):",
     ));
@@ -20,7 +20,7 @@ fn dist_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("distribute")
         .arg("-a")
         .arg("noderank")
-        .arg("test_data/correct_trivial.json");
+        .arg("test_data/trivial.json");
     cmd.assert().success().stdout(predicate::str::contains(
         "List of Distributions as (NodeId, PK, Score, Reward):",
     ));
@@ -33,7 +33,7 @@ fn invalid_command_without_alg() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("distribute")
         .arg("-r")
         .arg("50")
-        .arg("test_data/correct_trivial.json");
+        .arg("test_data/trivial.json");
     cmd.assert().failure().stderr(predicate::str::contains(
         "required arguments were not provided",
     ));
@@ -46,7 +46,7 @@ fn approx_command_without_samples() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("distribute")
         .arg("-a")
         .arg("approx-powerindex")
-        .arg("test_data/correct_trivial.json");
+        .arg("test_data/trivial.json");
     cmd.assert().failure().stderr(predicate::str::contains(
         "-a approx-powerindex requires the number of samples",
     ));

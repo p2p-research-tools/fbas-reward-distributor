@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn from_fbas_to_game() {
-        let fbas = Fbas::from_json_file(Path::new("test_data/correct_trivial.json"));
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let expected = CooperativeGame {
             fbas: &fbas,
