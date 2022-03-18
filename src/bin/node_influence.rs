@@ -140,7 +140,6 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig, samples: Option<usize>) ->
 
 fn main() {
     let cli = Cli::from_args();
-    println!("cli args {:?}", cli.subcommand);
     let (rank, dist) = match cli.subcommand {
         Some(SubCommand::Rank(cmd)) => (Some(extract_ranking_params(cmd)), None),
         Some(SubCommand::Distribute(cmd)) => (None, Some(extract_dist_params(cmd))),
@@ -155,8 +154,8 @@ fn main() {
         let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let alg_cfg = rank_cmd.1;
         let samples = rank_cmd.2;
+        let use_pks = rank_cmd.4;
         let alg = get_ranking_alg_from_params(alg_cfg, samples);
-        let use_pks = rank_cmd.3;
         let rankings = compute_influence(&node_ids, &fbas, alg, use_pks);
         println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
     } else if let Some(dist_cmd) = dist {
@@ -165,9 +164,9 @@ fn main() {
         let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let alg_cfg = dist_cmd.1;
         let samples = dist_cmd.3;
-        let alg = get_ranking_alg_from_params(alg_cfg, samples);
         let total_reward = dist_cmd.2;
-        let use_pks = dist_cmd.4;
+        let use_pks = dist_cmd.5;
+        let alg = get_ranking_alg_from_params(alg_cfg, samples);
         let allocation = distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks);
         println!(
             "List of Distributions as (NodeId, PK, Score, Reward):\n {:?}",
@@ -224,7 +223,6 @@ fn distribute_rewards(
         RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
         RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value),
         RankingAlg::ApproxPowerIndex(samples) => {
-            println!("samples {}", samples);
             approx_game_theory_distribution(samples, fbas, reward_value)
         }
     };

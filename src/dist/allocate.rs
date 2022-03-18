@@ -1,7 +1,5 @@
 use crate::*;
-use fbas_analyzer::Fbas;
-
-use fbas_analyzer::NodeId;
+use fbas_analyzer::{Fbas, NodeId};
 
 /// Distribute rewards according to NodeRank scores and return a list of NodeId, score, reward
 pub fn graph_theory_distribution(
@@ -90,7 +88,7 @@ mod tests {
     #[test]
     fn allocate_rewards_simple_fbas_approx_powerindex() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
+        let samples = 100;
         let reward = 10.0;
         let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward);
         let expected_rewards = vec![
@@ -100,7 +98,7 @@ mod tests {
         ];
         for (i, expected) in expected_rewards.into_iter().enumerate() {
             let actual = actual_rewards[i];
-            assert_relative_eq!(expected.1, actual.1);
+            assert_abs_diff_eq!(expected.1, actual.1, epsilon = 0.2f64);
         }
     }
 }

@@ -1,7 +1,6 @@
 use crate::*;
 use bit_set::BitSet;
-use fbas_analyzer::Fbas;
-use itertools::Itertools;
+use fbas_analyzer::{Fbas, NodeId};
 use rand::seq::SliceRandom;
 
 impl<'a> CooperativeGame<'a> {
@@ -11,8 +10,8 @@ impl<'a> CooperativeGame<'a> {
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
     pub fn compute_approx_ss_power_index_for_game(&self, num_samples: usize) -> Vec<Score> {
-        let num_players = self.players.len();
-        let sample_permutations = generate_sample_permutations(num_samples, num_players);
+        let top_tier = Self::get_involved_nodes(self.fbas);
+        let sample_permutations = generate_sample_permutations(num_samples, &top_tier);
         let power_indices: Vec<Score> = self
             .players
             .iter()
@@ -44,12 +43,11 @@ impl<'a> CooperativeGame<'a> {
 
 /// Given a permutation O, Pre^i(O) is the set of predecessors of the
 /// player i in the order O, i.e. Pre^i(O) = {O(1), . . . , O(k − 1)}, if i = O(k))
-fn pred_of_player_i(i: usize, permutation: &[usize]) -> Vec<usize> {
-    let i_index = match permutation.iter().position(|&idx| idx == i) {
-        Some(idx) => idx,
-        None => panic!("player {} not found in permutation {:?}", i, permutation),
-    };
-    permutation.iter().copied().take(i_index).collect()
+fn pred_of_player_i(i: usize, permutation: &[usize]) -> Vec<NodeId> {
+    match permutation.iter().position(|&idx| idx == i) {
+        Some(idx) => permutation.iter().copied().take(idx).collect(),
+        None => Vec::default(),
+    }
 }
 
 /// Expects the predecessors of player as a permutation
@@ -71,25 +69,16 @@ fn compute_player_i_marginal_contribution(player: usize, pred: &[usize], fbas: &
 /// We create the grand coalition, and randomly select no_samples permutations of it
 /// Done by shuffling the grand coalition no_sample many times
 /// Bitset wont work here because of order
-fn generate_sample_permutations(no_samples: usize, no_players: usize) -> Vec<Vec<usize>> {
-    let mut grand_coalition: Vec<usize> = (0..no_players).collect();
-    // In this case we compute all permutations and return that
-    if no_samples < 1000 {
-        grand_coalition
-            .into_iter()
-            .permutations(no_players)
-            .collect()
-    // here we shuffle the grand coalition no_sample many times and return those permutations
-    } else {
-        // Complexity 0(n) per shuffle
-        let mut rng = rand::thread_rng();
-        let mut random_permutations: Vec<Vec<usize>> = Vec::default();
-        for _ in 0..no_samples {
-            grand_coalition.shuffle(&mut rng);
-            random_permutations.push(grand_coalition.clone());
-        }
-        random_permutations
+fn generate_sample_permutations(no_samples: usize, top_tier: &[NodeId]) -> Vec<Vec<NodeId>> {
+    let mut grand_coalition: Vec<usize> = top_tier.into();
+    // Complexity 0(n) per shuffle
+    let mut rng = rand::thread_rng();
+    let mut random_permutations: Vec<Vec<usize>> = Vec::default();
+    for _ in 0..no_samples {
+        grand_coalition.shuffle(&mut rng);
+        random_permutations.push(grand_coalition.clone());
     }
+    random_permutations
 }
 
 #[cfg(test)]
@@ -101,7 +90,8 @@ mod tests {
 
     #[test]
     fn generate_correct_samples() {
-        let actual = generate_sample_permutations(6, 3);
+        let tt = vec![];
+        let actual = generate_sample_permutations(6, &tt);
         assert!(actual.len() == 6);
     }
 
@@ -133,19 +123,22 @@ mod tests {
     #[test]
     fn one_players_estimated_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let samples = generate_sample_permutations(3, 3);
+        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let samples = generate_sample_permutations(100, &tt);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
         let expected = 1.0 / 3.0;
-        assert_relative_eq!(expected, actual);
+        // a and b equal if |a - b| <= epsilon
+        assert_abs_diff_eq!(expected, actual, epsilon = 0.2f64);
     }
 
     #[test]
     fn players_estimated_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let samples = generate_sample_permutations(6, 3);
+        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let samples = generate_sample_permutations(100, &tt);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
         let expected = 1.0 / 3.0;
-        assert_relative_eq!(expected, actual);
+        assert_abs_diff_eq!(expected, actual, epsilon = 0.2f64);
     }
 
     #[test]
@@ -153,11 +146,11 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
-        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
+        let samples = 100;
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
         let actual = game.compute_approx_ss_power_index_for_game(samples);
         for e in 0..expected.len() {
-            assert_relative_eq!(expected[e], actual[e]);
+            assert_abs_diff_eq!(expected[e], actual[e], epsilon = 0.2f64);
         }
     }
 
@@ -225,11 +218,11 @@ mod tests {
         let fbas = Fbas::from_json_str(&input);
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
-        let samples = n_factorial(fbas.number_of_nodes()).to_usize().unwrap();
+        let samples = 100;
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
         let actual = game.compute_approx_ss_power_index_for_game(samples);
         for (i, _) in expected.iter().enumerate() {
-            assert_relative_eq!(expected[i], actual[i]);
+            assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);
         }
     }
 }

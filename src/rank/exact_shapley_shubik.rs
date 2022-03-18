@@ -10,9 +10,10 @@ impl<'a> CooperativeGame<'a> {
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
     pub fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
-        let num_players = self.players.len();
-        let total_factorial = n_factorial(num_players);
-        let winning_coalitions = self.find_winning_coalitions();
+        let top_tier = Self::get_involved_nodes(self.fbas);
+        let num_players = top_tier.len();
+        let total_factorial = n_factorial(top_tier.len());
+        let winning_coalitions = self.find_winning_coalitions(&top_tier);
         let players_critical_coalitions: HashMap<NodeId, Vec<Coalition>> = self
             .players
             .iter()
@@ -33,7 +34,7 @@ impl<'a> CooperativeGame<'a> {
     }
 
     /// winning_coalitions: a player's winning coalitions used to find their power index
-    /// num_players: number of players in the game
+    /// num_players: number of players in the top tier
     /// total_factorial: The factorial of num_players
     fn compute_player_power_index(
         winning_coalitions: Option<&Vec<Coalition>>,
@@ -50,10 +51,10 @@ impl<'a> CooperativeGame<'a> {
         }
     }
 
-    /// We construct the power set based on the number of players
+    /// We construct the power set based on the players in the top tier
     /// If a coalition contains a quorum, it is a winning coalition
-    pub(crate) fn find_winning_coalitions(&self) -> HashSet<Coalition> {
-        let all_coalitions = (0..self.players.len()).powerset();
+    pub(crate) fn find_winning_coalitions(&self, top_tier: &[NodeId]) -> HashSet<Coalition> {
+        let all_coalitions = top_tier.iter().copied().powerset();
         all_coalitions
             .into_iter()
             .filter(|s| {
@@ -98,11 +99,12 @@ mod tests {
     #[test]
     fn all_winning_sets_in_fbas() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
+        let top_tier = CooperativeGame::get_involved_nodes(&fbas);
         let game = CooperativeGame {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
         };
-        let actual = game.find_winning_coalitions();
+        let actual = game.find_winning_coalitions(&top_tier);
         let expected = HashSet::from([
             bitset![0, 1],
             bitset![0, 2],
