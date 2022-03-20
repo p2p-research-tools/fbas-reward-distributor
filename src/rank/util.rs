@@ -172,7 +172,7 @@ pub(crate) fn n_factorial(n: usize) -> Integer {
 }
 
 pub(crate) fn round_to_three_places(n: f64) -> f64 {
-    f64::trunc(n * 1000.0).round() / 1000.0
+    f64::trunc(n * 1000.0) / 1000.0
 }
 
 #[cfg(test)]

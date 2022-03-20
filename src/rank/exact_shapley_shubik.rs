@@ -9,7 +9,7 @@ impl<'a> CooperativeGame<'a> {
     /// Returns a list of scores with index 0 = node 0's score
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
-    pub fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
+    pub(crate) fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
         let top_tier = Self::get_involved_nodes(self.fbas);
         let num_players = top_tier.len();
         let total_factorial = n_factorial(top_tier.len());
@@ -42,12 +42,16 @@ impl<'a> CooperativeGame<'a> {
         total_factorial: Integer,
     ) -> Score {
         if let Some(critical_coalitions) = winning_coalitions {
-            critical_coalitions
-                .iter()
-                .map(|w| ss_probability_for_one_coalition(w, num_players, total_factorial.clone()))
-                .sum()
+            round_to_three_places(
+                critical_coalitions
+                    .iter()
+                    .map(|w| {
+                        ss_probability_for_one_coalition(w, num_players, total_factorial.clone())
+                    })
+                    .sum(),
+            )
         } else {
-            0.0
+            Score::default()
         }
     }
 
@@ -137,7 +141,7 @@ mod tests {
         let expected = 1.0 / 3.0;
         let actual =
             CooperativeGame::compute_player_power_index(Some(&winning), num_players, factorial);
-        assert_eq!(expected, actual);
+        assert_eq!(round_to_three_places(expected), actual);
     }
 
     #[test]
@@ -145,7 +149,7 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
-        let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
+        let expected = vec![0.333, 0.333, 0.333];
         let actual = game.compute_exact_ss_power_index_for_game();
         assert_eq!(expected, actual);
     }
@@ -217,7 +221,7 @@ mod tests {
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
         let actual = game.compute_exact_ss_power_index_for_game();
         for (i, _) in expected.iter().enumerate() {
-            assert_relative_eq!(expected[i], actual[i]);
+            assert_relative_eq!(round_to_three_places(expected[i]), actual[i]);
         }
     }
 }

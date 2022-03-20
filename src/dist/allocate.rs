@@ -13,7 +13,7 @@ pub fn graph_theory_distribution(
     for (node, node_score) in scores.iter().enumerate() {
         // normalise values nr/sum(nr)
         let reward_factor = node_score / node_rank_sum;
-        let reward = reward_factor * reward;
+        let reward = round_to_three_places(reward_factor * reward);
         rewards.push((node, scores[node], reward));
     }
     rewards
@@ -45,7 +45,7 @@ fn new_game_from_fbas(fbas: &Fbas) -> CooperativeGame {
 fn allocate_reward_to_players(scores: Vec<Score>, reward: Reward) -> Vec<(NodeId, Score, Reward)> {
     let mut rewards = Vec::default();
     for (node, node_score) in scores.iter().enumerate() {
-        let share = node_score * reward;
+        let share = round_to_three_places(node_score * reward);
         rewards.push((node, scores[node], share));
     }
     rewards
@@ -66,9 +66,9 @@ mod tests {
         let noderanks = compute_node_rank_for_fbas(&all_nodes, &fbas);
         let actual = graph_theory_distribution(&all_nodes, &fbas, reward);
         let expected = vec![
-            (0, noderanks[0], reward / 3.0),
-            (1, noderanks[1], reward / 3.0),
-            (2, noderanks[1], reward / 3.0),
+            (0, noderanks[0], round_to_three_places(reward / 3.0)),
+            (1, noderanks[1], round_to_three_places(reward / 3.0)),
+            (2, noderanks[1], round_to_three_places(reward / 3.0)),
         ];
         assert_eq!(actual, expected);
     }
@@ -79,9 +79,9 @@ mod tests {
         let reward = 1.0;
         let actual = exact_game_theory_distribution(&fbas, reward);
         let expected = vec![
-            (0, 1.0 / 3.0, reward / 3.0),
-            (1, 1.0 / 3.0, reward / 3.0),
-            (2, 1.0 / 3.0, reward / 3.0),
+            (0, 0.333, round_to_three_places(reward / 3.0)),
+            (1, 0.333, round_to_three_places(reward / 3.0)),
+            (2, 0.333, round_to_three_places(reward / 3.0)),
         ];
         assert_eq!(expected, actual);
     }

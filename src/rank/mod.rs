@@ -6,6 +6,6 @@ mod util;
 
 pub use approx_shapley_shubik::*;
 pub use exact_shapley_shubik::*;
-pub use node_rank::*;
+pub(crate) use node_rank::compute_node_rank_for_fbas;
 pub use ranking::*;
 pub(crate) use util::*;

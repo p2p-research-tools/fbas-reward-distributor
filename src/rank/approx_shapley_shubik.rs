@@ -9,7 +9,7 @@ impl<'a> CooperativeGame<'a> {
     /// sampling).
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
-    pub fn compute_approx_ss_power_index_for_game(&self, num_samples: usize) -> Vec<Score> {
+    pub(crate) fn compute_approx_ss_power_index_for_game(&self, num_samples: usize) -> Vec<Score> {
         let top_tier = Self::get_involved_nodes(self.fbas);
         let sample_permutations = generate_sample_permutations(num_samples, &top_tier);
         let power_indices: Vec<Score> = self
@@ -30,14 +30,14 @@ impl<'a> CooperativeGame<'a> {
         permutation_samples: &[Vec<usize>],
         fbas: &Fbas,
     ) -> Score {
-        let mut estimate = 0.0;
+        let mut estimate = Score::default();
         for sample in permutation_samples {
             let pred = pred_of_player_i(player, sample);
             let contribution = compute_player_i_marginal_contribution(player, &pred, fbas);
             estimate += contribution as f64;
         }
         estimate /= permutation_samples.len() as f64;
-        estimate
+        round_to_three_places(estimate)
     }
 }
 

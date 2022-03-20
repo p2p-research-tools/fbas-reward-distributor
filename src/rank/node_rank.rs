@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 
 /// NodeRank is an extension of PageRank proposed by Kim et al. in the paper 'Is Stellar as Secure
 /// As You Think?'.
-pub fn compute_node_rank_for_fbas(nodes: &[NodeId], fbas: &Fbas) -> Vec<Score> {
+pub(crate) fn compute_node_rank_for_fbas(nodes: &[NodeId], fbas: &Fbas) -> Vec<Score> {
     let page_rank_scores = fbas.rank_nodes();
     // A map of <NodeID, [qsets node is in]>
     let sets_involving_node: HashMap<NodeId, HashSet<QuorumSet>> = nodes

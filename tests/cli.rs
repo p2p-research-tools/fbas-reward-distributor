@@ -5,9 +5,8 @@ use predicates::prelude::*;
 fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("node_influence")?;
     cmd.arg("rank")
-        .arg("-a")
-        .arg("exact-powerindex")
-        .arg("test_data/trivial.json");
+        .arg("test_data/trivial.json")
+        .arg("exact-power-index");
     cmd.assert().success().stdout(predicate::str::contains(
         "List of Rankings as (NodeId, PK, Score):",
     ));
@@ -18,9 +17,8 @@ fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
 fn dist_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("node_influence")?;
     cmd.arg("distribute")
-        .arg("-a")
-        .arg("noderank")
-        .arg("test_data/trivial.json");
+        .arg("test_data/trivial.json")
+        .arg("node-rank");
     cmd.assert().success().stdout(predicate::str::contains(
         "List of Distributions as (NodeId, PK, Score, Reward):",
     ));
@@ -34,9 +32,8 @@ fn invalid_command_without_alg() -> Result<(), Box<dyn std::error::Error>> {
         .arg("-r")
         .arg("50")
         .arg("test_data/trivial.json");
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "required arguments were not provided",
-    ));
+    let output = cmd.output().expect("error executing command");
+    assert!(!output.status.success());
     Ok(())
 }
 
@@ -44,11 +41,10 @@ fn invalid_command_without_alg() -> Result<(), Box<dyn std::error::Error>> {
 fn approx_command_without_samples() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("node_influence")?;
     cmd.arg("distribute")
-        .arg("-a")
-        .arg("approx-powerindex")
-        .arg("test_data/trivial.json");
+        .arg("test_data/trivial.json")
+        .arg("approx-power-index");
     cmd.assert().failure().stderr(predicate::str::contains(
-        "-a approx-powerindex requires the number of samples",
+        "required arguments were not provided",
     ));
     Ok(())
 }
