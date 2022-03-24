@@ -107,6 +107,7 @@ mod tests {
         let game = CooperativeGame {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
+            top_tier: None,
         };
         let actual = game.find_winning_coalitions(&top_tier);
         let expected = HashSet::from([

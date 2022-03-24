@@ -6,7 +6,9 @@ pub(crate) struct CooperativeGame<'a> {
     /// The FBAS
     pub(crate) fbas: &'a Fbas,
     /// The set of players
-    pub(crate) players: Vec<usize>,
+    pub(crate) players: Vec<NodeId>,
+    /// The top tier of the FBAS. Relevant for the approximation only
+    pub(crate) top_tier: Option<Vec<NodeId>>,
 }
 
 impl<'a> CooperativeGame<'a> {
@@ -14,7 +16,26 @@ impl<'a> CooperativeGame<'a> {
     pub fn init_from_fbas(nodes: &[NodeId], fbas: &'a Fbas) -> Self {
         let mut players: Vec<NodeId> = nodes.into();
         players.dedup();
-        Self { fbas, players }
+        Self {
+            fbas,
+            players,
+            top_tier: None,
+        }
+    }
+
+    /// Sets the number of players and corresponding FBAS
+    pub fn init_from_fbas_with_top_tier(
+        all_nodes: &[NodeId],
+        top_tier: &[NodeId],
+        fbas: &'a Fbas,
+    ) -> Self {
+        let mut players: Vec<NodeId> = all_nodes.into();
+        players.dedup();
+        Self {
+            fbas,
+            players,
+            top_tier: Some(top_tier.into()),
+        }
     }
 
     pub(crate) fn coalitions_cardinatily(coalition: &Coalition) -> usize {
@@ -50,6 +71,7 @@ mod tests {
         let expected = CooperativeGame {
             fbas: &fbas,
             players: vec![0, 1, 2],
+            top_tier: None,
         };
         let actual = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         assert_eq!(expected.players, actual.players);
@@ -152,5 +174,19 @@ mod tests {
         for i in 0..actual.len() {
             assert!(actual[i].iter().all(|set| expected[i].contains(set)));
         }
+    }
+
+    #[test]
+    fn init_game_with_tt() {
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
+        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let expected = CooperativeGame {
+            fbas: &fbas,
+            players: vec![0, 1, 2],
+            top_tier: Some(tt.clone()),
+        };
+        let actual = CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, &fbas);
+        assert_eq!(expected, actual);
     }
 }

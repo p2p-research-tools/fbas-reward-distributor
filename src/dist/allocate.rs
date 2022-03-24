@@ -31,8 +31,14 @@ pub fn approx_game_theory_distribution(
     num_samples: usize,
     fbas: &Fbas,
     reward: Reward,
+    top_tier: Option<Vec<NodeId>>,
 ) -> Vec<(NodeId, Score, Reward)> {
-    let game = new_game_from_fbas(fbas);
+    let game = if let Some(tt) = top_tier {
+        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, fbas)
+    } else {
+        new_game_from_fbas(fbas)
+    };
     let scores = game.compute_approx_ss_power_index_for_game(num_samples);
     allocate_reward_to_players(scores, reward)
 }
@@ -90,7 +96,7 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let samples = 100;
         let reward = 10.0;
-        let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward);
+        let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward, None);
         let expected_rewards = vec![
             (0, 1.0 / 3.0, reward / 3.0),
             (1, 1.0 / 3.0, reward / 3.0),

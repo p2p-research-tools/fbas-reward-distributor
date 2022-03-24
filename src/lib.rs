@@ -10,6 +10,8 @@ pub type Score = f64;
 pub type Reward = f64;
 pub use io::*;
 
+use fbas_analyzer::NodeId;
+
 pub type Coalition = fbas_analyzer::NodeIdSet;
 
 /// Algorithm to use when ranking nodes
@@ -18,5 +20,5 @@ pub enum RankingAlg {
     /// An extension of PageRank. See the function 'rank_nodes_using_node_rank' for more
     NodeRank,
     ExactPowerIndex,
-    ApproxPowerIndex(usize),
+    ApproxPowerIndex(usize, Option<Vec<NodeId>>),
 }

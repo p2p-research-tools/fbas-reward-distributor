@@ -8,7 +8,7 @@ use std::path::PathBuf;
 /// Rank nodes of an FBAS and allocate rewards to them accordingly
 #[derive(Debug, StructOpt)]
 #[structopt(
-    name = "fbas_reward_distributor",
+    name = "reward_distributor",
     about = "Rank nodes of an FBAS and allocate rewards to them accordingly",
     author = "Charmaine Ndolo"
 )]
@@ -82,15 +82,33 @@ enum RankingAlgConfig {
     ExactPowerIndex,
     /// Approximate Shapley values as a measure of nodes' importance in the FBAS. The number of
     /// samples to use must be passed if selected.
-    ApproxPowerIndex { s: usize },
+    /// The computation of minimal quorums can optionally be done before we start approximation.
+    /// Useful, e.g. for timing measurements.
+    ApproxPowerIndex {
+        s: usize,
+        exclude_tt_comp: Option<bool>,
+    },
 }
 
 fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
     match cfg {
         RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
         RankingAlgConfig::ExactPowerIndex => RankingAlg::ExactPowerIndex,
-        RankingAlgConfig::ApproxPowerIndex { s } => RankingAlg::ApproxPowerIndex(s),
+        RankingAlgConfig::ApproxPowerIndex { s, exclude_tt_comp } => {
+            if let Some(true) = exclude_tt_comp {
+                RankingAlg::ApproxPowerIndex(s, Some(Vec::default()))
+            } else {
+                RankingAlg::ApproxPowerIndex(s, None)
+            }
+        }
     }
+}
+
+fn get_top_tier_nodes(fbas: &Fbas) -> Vec<NodeId> {
+    let min_qs = find_minimal_quorums(fbas);
+    let involved_nodes: Vec<NodeId> = involved_nodes(&min_qs).into_iter().collect();
+    println!("Computed top tier of size {}.", involved_nodes.len());
+    involved_nodes
 }
 
 fn main() {
@@ -102,7 +120,17 @@ fn main() {
             let use_pks = cmd.pks;
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-            let alg = get_ranking_alg_from_params(alg_cfg);
+            let mut alg = get_ranking_alg_from_params(alg_cfg);
+            // need to get TT if its computation should be excluded from approximation
+            alg = if let RankingAlg::ApproxPowerIndex(s, tt) = alg.clone() {
+                if tt.is_some() {
+                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas)))
+                } else {
+                    alg.clone()
+                }
+            } else {
+                alg
+            };
             let rankings = compute_influence(&node_ids, &fbas, alg, use_pks);
             println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
         }
@@ -113,7 +141,17 @@ fn main() {
             let use_pks = cmd.pks;
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-            let alg = get_ranking_alg_from_params(alg_cfg);
+            let mut alg = get_ranking_alg_from_params(alg_cfg);
+            // need to get TT if its computation should be excluded from approximation
+            alg = if let RankingAlg::ApproxPowerIndex(s, tt) = alg.clone() {
+                if tt.is_some() {
+                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas)))
+                } else {
+                    alg.clone()
+                }
+            } else {
+                alg
+            };
             let allocation = distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks);
             println!(
                 "List of Distributions as (NodeId, PK, Score, Reward):\n {:?}",
@@ -170,8 +208,8 @@ fn distribute_rewards(
     let allocation = match algo {
         RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
         RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value),
-        RankingAlg::ApproxPowerIndex(samples) => {
-            approx_game_theory_distribution(samples, fbas, reward_value)
+        RankingAlg::ApproxPowerIndex(samples, tt) => {
+            approx_game_theory_distribution(samples, fbas, reward_value, tt)
         }
     };
     create_reward_report(allocation, fbas, use_pks)
