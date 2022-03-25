@@ -1,5 +1,5 @@
-use crate::io::*;
-use fbas_analyzer::{to_public_keys, Fbas};
+use crate::{NodeRanking, NodeReward, PublicKey, Reward, Score};
+use fbas_analyzer::{to_public_keys, Fbas, NodeId};
 
 /// Returns a list of NodeRankings sorted by scores
 pub fn create_node_ranking_report(

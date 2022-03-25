@@ -1,4 +1,4 @@
-use fbas_analyzer::*;
+use fbas_analyzer::{Fbas, NodeId};
 use fbas_reward_distributor::*;
 
 use structopt::StructOpt;
@@ -105,8 +105,8 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
 }
 
 fn get_top_tier_nodes(fbas: &Fbas) -> Vec<NodeId> {
-    let min_qs = find_minimal_quorums(fbas);
-    let involved_nodes: Vec<NodeId> = involved_nodes(&min_qs).into_iter().collect();
+    let min_qs = fbas_analyzer::find_minimal_quorums(fbas);
+    let involved_nodes: Vec<NodeId> = fbas_analyzer::involved_nodes(&min_qs).into_iter().collect();
     println!("Computed top tier of size {}.", involved_nodes.len());
     involved_nodes
 }
@@ -167,7 +167,7 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
         let mut fbas = Fbas::from_json_file(nodes_path);
         if ignore_inactive_nodes {
             let inactive_nodes =
-                FilteredNodes::from_json_file(nodes_path, |v| v["active"] == false);
+                fbas_analyzer::FilteredNodes::from_json_file(nodes_path, |v| v["active"] == false);
             fbas = fbas.without_nodes_pretty(&inactive_nodes.into_pretty_vec());
         }
         fbas

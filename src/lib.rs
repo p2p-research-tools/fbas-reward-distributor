@@ -1,14 +1,14 @@
 pub mod dist;
-pub mod io;
 pub mod rank;
+pub mod report;
 pub mod types;
 
 pub use dist::*;
 pub use rank::*;
-pub(crate) use types::*;
+pub use report::*;
+pub use types::*;
 pub type Score = f64;
 pub type Reward = f64;
-pub use io::*;
 
 use fbas_analyzer::NodeId;
 
