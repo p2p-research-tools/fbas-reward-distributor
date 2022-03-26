@@ -45,7 +45,3 @@ approx = "0.5.1"
 assert_cmd = "2.0.4"
 predicates = "2.1.1"
 criterion = "0.3"
-
-[[bench]]
-name = "complexity"
-harness = false
