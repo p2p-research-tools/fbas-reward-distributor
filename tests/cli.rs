@@ -3,7 +3,7 @@ use predicates::prelude::*;
 
 #[test]
 fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("node_influence")?;
+    let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("rank")
         .arg("test_data/trivial.json")
         .arg("exact-power-index");
@@ -15,7 +15,7 @@ fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn dist_command() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("node_influence")?;
+    let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("distribute")
         .arg("test_data/trivial.json")
         .arg("node-rank");
@@ -27,7 +27,7 @@ fn dist_command() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn invalid_command_without_alg() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("node_influence")?;
+    let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("distribute")
         .arg("-r")
         .arg("50")
@@ -39,7 +39,7 @@ fn invalid_command_without_alg() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn approx_command_without_samples() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("node_influence")?;
+    let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("distribute")
         .arg("test_data/trivial.json")
         .arg("approx-power-index");

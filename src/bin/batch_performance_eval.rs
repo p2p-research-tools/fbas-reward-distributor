@@ -46,7 +46,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .filter_or("LOG_LEVEL", "info")
         .write_style_or("LOG_STYLE", "always");
     env_logger::init_from_env(env);
-
     let fbas_type = args.fbas_type;
     let inputs: Vec<InputDataPoint> =
         generate_inputs(args.max_top_tier_size, args.runs, fbas_type.clone());
@@ -57,7 +56,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let tasks = make_sorted_tasklist(inputs, existing_outputs);
 
-    let output_iterator = bulk_do(tasks, args.jobs, fbas_type);
+    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone());
+    println!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
 
     write_csv(output_iterator, &args.output_path, args.update)?;
     Ok(())
@@ -178,42 +178,48 @@ fn rank(input: InputDataPoint, fbas_type: FbasType) -> OutputDataPoint {
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
-    let (noderanks, duration_noderank) = timed_secs!(rank_nodes(&fbas, RankingAlg::NodeRank));
+    let (_, duration_noderank) = timed_secs!(rank_nodes(&fbas, RankingAlg::NodeRank));
     debug!("Completed NodeRank for FBAS of size {}.", size);
-    let (exact_power_indices, duration_exact_power_index) =
+    let (_, duration_exact_power_index) =
         timed_secs!(rank_nodes(&fbas, RankingAlg::ExactPowerIndex));
     debug!("Completed power index for FBAS of size {}.", size);
-    let (approx_power_indices_10_pow_1, duration_approx_power_indices_10_pow_1) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(1), None))
-    );
-    let (approx_power_indices_10_pow_2, duration_approx_power_indices_10_pow_2) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(2), None))
-    );
-    let (approx_power_indices_10_pow_3, duration_approx_power_indices_10_pow_3) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(3), None))
-    );
-    let (approx_power_indices_10_pow_4, duration_approx_power_indices_10_pow_4) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(4), None))
-    );
-    let (approx_power_indices_10_pow_5, duration_approx_power_indices_10_pow_5) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(5), None))
-    );
-    let (approx_power_indices_10_pow_6, duration_approx_power_indices_10_pow_6) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(6), None))
-    );
-    let (approx_power_indices_10_pow_7, duration_approx_power_indices_10_pow_7) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(7), None))
-    );
-    let (approx_power_indices_10_pow_8, duration_approx_power_indices_10_pow_8) = timed_secs!(
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(8), None))
-    );
+    let (_, duration_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(1), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_2) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(2), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_3) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(3), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_4) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(4), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_5) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(5), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_6) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(6), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_7) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(7), None)
+    ));
+    let (_, duration_approx_power_indices_10_pow_8) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(8), None)
+    ));
     debug!("Computed approximation for FBAS of size {}.", size);
 
-    let top_tier_nodes: Vec<NodeId> =
-        fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
-            .iter()
-            .collect();
-    info!(
+    // No need to compute mqs because the FBAS comprises only of a top tier
+    let top_tier_nodes: Vec<NodeId> = (0..size).collect();
+    debug!(
         "Got top tier for current FBAS of {} nodes",
         fbas.number_of_nodes()
     );
@@ -257,16 +263,6 @@ fn rank(input: InputDataPoint, fbas_type: FbasType) -> OutputDataPoint {
     OutputDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
-        noderanks,
-        exact_power_indices,
-        approx_power_indices_10_pow_1,
-        approx_power_indices_10_pow_2,
-        approx_power_indices_10_pow_3,
-        approx_power_indices_10_pow_4,
-        approx_power_indices_10_pow_5,
-        approx_power_indices_10_pow_6,
-        approx_power_indices_10_pow_7,
-        approx_power_indices_10_pow_8,
         duration_noderank,
         duration_exact_power_index,
         duration_approx_power_indices_10_pow_1,
