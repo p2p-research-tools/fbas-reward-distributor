@@ -1,8 +1,6 @@
 mod game;
-mod io;
 
 pub(crate) use game::*;
-pub use io::*;
 
 use crate::{Reward, Score};
 use fbas_analyzer::NodeId;

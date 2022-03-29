@@ -63,43 +63,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[derive(Debug, Clone, StructOpt)]
-enum FbasType {
-    /// Make FBAS that looks like Stellar's top tier: every 3 top-tier nodes are organised as an
-    /// inner_quorum set of the top-tier quorum set.
-    Stellar,
-    /// Full symmetric top tier
-    MobileCoin,
-}
-
-impl FbasType {
-    fn node_increments(&self) -> usize {
-        match self {
-            FbasType::MobileCoin => 1,
-            FbasType::Stellar => 3,
-        }
-    }
-    fn make_one(&self, top_tier_size: usize) -> Fbas {
-        match self {
-            FbasType::MobileCoin => make_almost_ideal_fbas(top_tier_size),
-            FbasType::Stellar => make_almost_ideal_stellarlike_fbas(top_tier_size),
-        }
-    }
-}
-
-#[derive(Debug)]
-enum Task {
-    Reuse(OutputDataPoint),
-    Analyze(InputDataPoint),
-}
-impl Task {
-    fn label(&self) -> usize {
-        match self {
-            Task::Reuse(output) => output.top_tier_size,
-            Task::Analyze(input) => input.top_tier_size,
-        }
-    }
-}
 fn generate_inputs(
     max_top_tier_size: usize,
     runs: usize,
@@ -117,12 +80,12 @@ fn generate_inputs(
 
 fn load_existing_outputs(
     path: &Option<PathBuf>,
-) -> Result<BTreeMap<InputDataPoint, OutputDataPoint>, Box<dyn Error>> {
+) -> Result<BTreeMap<InputDataPoint, PerfDataPoint>, Box<dyn Error>> {
     if let Some(path) = path {
         let data_points = read_csv_from_file(path)?;
         let data_points_map = data_points
             .into_iter()
-            .map(|d| (InputDataPoint::from_output_data_point(&d), d))
+            .map(|d| (InputDataPoint::from_perf_data_point(&d), d))
             .collect();
         Ok(data_points_map)
     } else {
@@ -132,7 +95,7 @@ fn load_existing_outputs(
 
 fn make_sorted_tasklist(
     inputs: Vec<InputDataPoint>,
-    existing_outputs: BTreeMap<InputDataPoint, OutputDataPoint>,
+    existing_outputs: BTreeMap<InputDataPoint, PerfDataPoint>,
 ) -> Vec<Task> {
     let mut tasks: Vec<Task> = inputs
         .into_iter()
@@ -143,7 +106,7 @@ fn make_sorted_tasklist(
                 None
             }
         })
-        .chain(existing_outputs.values().cloned().map(Task::Reuse))
+        .chain(existing_outputs.values().cloned().map(Task::ReusePerfData))
         .collect();
     tasks.sort_by_cached_key(|t| t.label());
     tasks
@@ -153,16 +116,16 @@ fn bulk_do(
     tasks: Vec<Task>,
     jobs: usize,
     fbas_type: FbasType,
-) -> impl Iterator<Item = OutputDataPoint> {
+) -> impl Iterator<Item = PerfDataPoint> {
     tasks
         .into_iter()
         .with_nb_threads(jobs)
         .par_map(move |task| analyze_or_reuse(task, fbas_type.clone()))
 }
 
-fn analyze_or_reuse(task: Task, fbas_type: FbasType) -> OutputDataPoint {
+fn analyze_or_reuse(task: Task, fbas_type: FbasType) -> PerfDataPoint {
     match task {
-        Task::Reuse(output) => {
+        Task::ReusePerfData(output) => {
             eprintln!(
                 "Reusing existing analysis results for m={}, run={}.",
                 output.top_tier_size, output.run
@@ -170,19 +133,26 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType) -> OutputDataPoint {
             output
         }
         Task::Analyze(input) => rank(input, fbas_type),
+        _ => panic!("Unexpected data point"),
     }
 }
 
-fn rank(input: InputDataPoint, fbas_type: FbasType) -> OutputDataPoint {
+fn rank(input: InputDataPoint, fbas_type: FbasType) -> PerfDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
     let (_, duration_noderank) = timed_secs!(rank_nodes(&fbas, RankingAlg::NodeRank));
-    debug!("Completed NodeRank for FBAS of size {}.", size);
+    debug!(
+        "Completed NodeRank run {} for FBAS of size {}.",
+        input.run, size
+    );
     let (_, duration_exact_power_index) =
         timed_secs!(rank_nodes(&fbas, RankingAlg::ExactPowerIndex));
-    debug!("Completed power index for FBAS of size {}.", size);
+    debug!(
+        "Completed power index run {} for FBAS of size {}.",
+        input.run, size
+    );
     let (_, duration_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(1), None)
@@ -215,8 +185,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType) -> OutputDataPoint {
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(8), None)
     ));
-    debug!("Computed approximation for FBAS of size {}.", size);
-
+    debug!("Completed 10⁸ approximation for FBAS of size {}.", size);
+    debug!(
+        "Completed Approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     // No need to compute mqs because the FBAS comprises only of a top tier
     let top_tier_nodes: Vec<NodeId> = (0..size).collect();
     debug!(
@@ -256,11 +229,15 @@ fn rank(input: InputDataPoint, fbas_type: FbasType) -> OutputDataPoint {
         RankingAlg::ApproxPowerIndex(10usize.pow(8), Some(top_tier_nodes))
     ));
     debug!(
+        "Completed 10⁸ approximation with precomputed top tier for FBAS of size {}.",
+        size
+    );
+    debug!(
         "Completed approximation with precomputed top tier for FBAS of size {}.",
         size
     );
     info!("Completed run {} for FBAS with {} nodes.", input.run, size);
-    OutputDataPoint {
+    PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
         duration_noderank,
@@ -301,39 +278,4 @@ fn write_csv(
     } else {
         write_csv_to_stdout(data_points)
     }
-}
-
-fn make_almost_ideal_fbas(top_tier_size: usize) -> Fbas {
-    let quorum_set = QuorumSet {
-        validators: (0..top_tier_size).collect(),
-        threshold: simulation::qsc::calculate_67p_threshold(top_tier_size),
-        inner_quorum_sets: vec![],
-    };
-    let mut fbas = Fbas::new();
-    for _ in 0..top_tier_size {
-        fbas.add_generic_node(quorum_set.clone());
-    }
-    fbas
-}
-
-fn make_almost_ideal_stellarlike_fbas(top_tier_size: usize) -> Fbas {
-    assert!(
-        top_tier_size % 3 == 0,
-        "Nodes in the Stellar network top tier always come in groups of (at least) 3..."
-    );
-    let mut quorum_set = QuorumSet::new_empty();
-    for org_id in 0..top_tier_size / 3 {
-        let validators = vec![org_id * 3, org_id * 3 + 1, org_id * 3 + 2];
-        quorum_set.inner_quorum_sets.push(QuorumSet {
-            validators,
-            threshold: 2,
-            inner_quorum_sets: vec![],
-        });
-    }
-    quorum_set.threshold = simulation::qsc::calculate_67p_threshold(top_tier_size / 3);
-    let mut fbas = Fbas::new();
-    for _ in 0..top_tier_size {
-        fbas.add_generic_node(quorum_set.clone());
-    }
-    fbas
 }

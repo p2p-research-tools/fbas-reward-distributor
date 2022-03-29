@@ -8,7 +8,13 @@ pub struct InputDataPoint {
     pub run: usize,
 }
 impl InputDataPoint {
-    pub fn from_output_data_point(d: &OutputDataPoint) -> Self {
+    pub fn from_perf_data_point(d: &PerfDataPoint) -> Self {
+        Self {
+            top_tier_size: d.top_tier_size,
+            run: d.run,
+        }
+    }
+    pub fn from_error_data_point(d: &ErrorDataPoint) -> Self {
         Self {
             top_tier_size: d.top_tier_size,
             run: d.run,
@@ -17,7 +23,7 @@ impl InputDataPoint {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OutputDataPoint {
+pub struct PerfDataPoint {
     pub top_tier_size: usize,
     pub run: usize,
     pub duration_noderank: f64,
@@ -40,7 +46,46 @@ pub struct OutputDataPoint {
     pub duration_after_mq_approx_power_indices_10_pow_8: f64,
 }
 
-pub fn read_csv_from_file(path: &Path) -> Result<Vec<OutputDataPoint>, Box<dyn Error>> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ErrorDataPoint {
+    pub top_tier_size: usize,
+    pub run: usize,
+    pub mean_abs_error_10_pow_1: f64,
+    pub median_abs_error_10_pow_1: f64,
+    pub mean_abs_percentage_error_10_pow_1: f64,
+    pub mean_abs_error_10_pow_2: f64,
+    pub median_abs_error_10_pow_2: f64,
+    pub mean_abs_percentage_error_10_pow_2: f64,
+    pub mean_abs_error_10_pow_3: f64,
+    pub median_abs_error_10_pow_3: f64,
+    pub mean_abs_percentage_error_10_pow_3: f64,
+    pub mean_abs_error_10_pow_4: f64,
+    pub median_abs_error_10_pow_4: f64,
+    pub mean_abs_percentage_error_10_pow_4: f64,
+    pub mean_abs_error_10_pow_5: f64,
+    pub median_abs_error_10_pow_5: f64,
+    pub mean_abs_percentage_error_10_pow_5: f64,
+    pub mean_abs_error_10_pow_6: f64,
+    pub median_abs_error_10_pow_6: f64,
+    pub mean_abs_percentage_error_10_pow_6: f64,
+    pub mean_abs_error_10_pow_7: f64,
+    pub median_abs_error_10_pow_7: f64,
+    pub mean_abs_percentage_error_10_pow_7: f64,
+    pub mean_abs_error_10_pow_8: f64,
+    pub median_abs_error_10_pow_8: f64,
+    pub mean_abs_percentage_error_10_pow_8: f64,
+}
+
+pub fn read_csv_from_file(path: &Path) -> Result<Vec<PerfDataPoint>, Box<dyn Error>> {
+    let mut reader = Reader::from_path(path)?;
+    let mut result = vec![];
+    for line in reader.deserialize() {
+        result.push(line?);
+    }
+    Ok(result)
+}
+
+pub fn read_error_data_csv_from_file(path: &Path) -> Result<Vec<ErrorDataPoint>, Box<dyn Error>> {
     let mut reader = Reader::from_path(path)?;
     let mut result = vec![];
     for line in reader.deserialize() {

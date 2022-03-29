@@ -20,7 +20,12 @@ impl<'a> CooperativeGame<'a> {
             .players
             .iter()
             .map(|&p| {
-                Self::compute_approx_ss_power_index_for_player(p, &sample_permutations, self.fbas)
+                Self::compute_approx_ss_power_index_for_player(
+                    p,
+                    sample_permutations.clone().into_iter(),
+                    num_samples,
+                    self.fbas,
+                )
             })
             .collect();
         power_indices
@@ -31,16 +36,17 @@ impl<'a> CooperativeGame<'a> {
     /// The estimate is equal to the sum of player's contribution each colution/samples
     fn compute_approx_ss_power_index_for_player(
         player: usize,
-        permutation_samples: &[Vec<usize>],
+        permutation_samples: impl Iterator<Item = Vec<usize>>,
+        total_samples: usize,
         fbas: &Fbas,
     ) -> Score {
         let mut estimate = Score::default();
         for sample in permutation_samples {
-            let pred = pred_of_player_i(player, sample);
+            let pred = pred_of_player_i(player, &sample);
             let contribution = compute_player_i_marginal_contribution(player, &pred, fbas);
             estimate += contribution as f64;
         }
-        estimate /= permutation_samples.len() as f64;
+        estimate /= total_samples as f64;
         round_to_three_places(estimate)
     }
 }
@@ -73,16 +79,19 @@ fn compute_player_i_marginal_contribution(player: usize, pred: &[usize], fbas: &
 /// We create the grand coalition, and randomly select no_samples permutations of it
 /// Done by shuffling the grand coalition no_sample many times
 /// Bitset wont work here because of order
-fn generate_sample_permutations(no_samples: usize, top_tier: &[NodeId]) -> Vec<Vec<NodeId>> {
+fn generate_sample_permutations(
+    no_samples: usize,
+    top_tier: &[NodeId],
+) -> (impl IntoIterator<Item = Vec<NodeId>> + Clone) {
     let mut grand_coalition: Vec<usize> = top_tier.into();
     // Complexity 0(n) per shuffle
-    let mut rng = rand::thread_rng();
-    let mut random_permutations: Vec<Vec<usize>> = Vec::default();
-    for _ in 0..no_samples {
-        grand_coalition.shuffle(&mut rng);
-        random_permutations.push(grand_coalition.clone());
-    }
-    random_permutations
+    (0..no_samples)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .map(move |_| {
+            grand_coalition.shuffle(&mut rand::thread_rng());
+            grand_coalition.clone()
+        })
 }
 
 #[cfg(test)]
@@ -96,7 +105,7 @@ mod tests {
     fn generate_correct_samples() {
         let tt = vec![];
         let actual = generate_sample_permutations(6, &tt);
-        assert!(actual.len() == 6);
+        assert_eq!(actual.into_iter().size_hint(), (6, Some(6)));
     }
 
     #[test]
@@ -129,7 +138,12 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let tt = CooperativeGame::get_involved_nodes(&fbas);
         let samples = generate_sample_permutations(100, &tt);
-        let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
+        let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
+            0,
+            samples.into_iter(),
+            100,
+            &fbas,
+        );
         let expected = 1.0 / 3.0;
         // a and b equal if |a - b| <= epsilon
         assert_abs_diff_eq!(expected, actual, epsilon = 0.2f64);
@@ -140,7 +154,12 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let tt = CooperativeGame::get_involved_nodes(&fbas);
         let samples = generate_sample_permutations(100, &tt);
-        let actual = CooperativeGame::compute_approx_ss_power_index_for_player(0, &samples, &fbas);
+        let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
+            0,
+            samples.into_iter(),
+            100,
+            &fbas,
+        );
         let expected = 1.0 / 3.0;
         assert_abs_diff_eq!(expected, actual, epsilon = 0.2f64);
     }
