@@ -35,8 +35,8 @@ fn median_abs_error(approximation: &[f64], truth: &[f64]) -> f64 {
 // The idea of this metric is to be sensitive to relative errors. It is for example not changed by
 // a global scaling of the target variable.
 fn mean_abs_pctg_error(approximation: &[f64], truth: &[f64]) -> f64 {
-    let epsilon: f64 = 0.0; //  is an arbitrary small yet strictly positive number to avoid undefined results when y is zero
-    let mut average_percentage_error = 0.00001;
+    let epsilon: f64 = 0.00001; //  is an arbitrary small yet strictly positive number to avoid undefined results when y is zero
+    let mut average_percentage_error = 0.0;
     for (i, value) in approximation.iter().enumerate() {
         let abs_diff: f64 = ((value - truth[i]) as f64).abs();
         let max = epsilon.max(truth[i]);
