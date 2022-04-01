@@ -9,11 +9,17 @@ impl<'a> CooperativeGame<'a> {
     /// sampling).
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
-    pub(crate) fn compute_approx_ss_power_index_for_game(&self, num_samples: usize) -> Vec<Score> {
+    pub(crate) fn compute_approx_ss_power_index_for_game(
+        &self,
+        num_samples: usize,
+        qi_check: bool,
+    ) -> Vec<Score> {
+        // Because the TT is computed out of this function, we assume the check for     QI has
+        // already been done if we got this far
         let top_tier = if let Some(tt) = self.top_tier.clone() {
             tt
         } else {
-            Self::get_involved_nodes(self.fbas)
+            Self::get_involved_nodes(self.fbas, qi_check)
         };
         let sample_permutations = generate_sample_permutations(num_samples, &top_tier);
         let power_indices: Vec<Score> = self
@@ -136,7 +142,8 @@ mod tests {
     #[test]
     fn one_players_estimated_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let qi_check = true;
+        let tt = CooperativeGame::get_involved_nodes(&fbas, qi_check);
         let samples = generate_sample_permutations(100, &tt);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
             0,
@@ -152,7 +159,8 @@ mod tests {
     #[test]
     fn players_estimated_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let qi_check = true;
+        let tt = CooperativeGame::get_involved_nodes(&fbas, qi_check);
         let samples = generate_sample_permutations(100, &tt);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
             0,
@@ -170,8 +178,9 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let samples = 100;
+        let qi_check = true;
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
-        let actual = game.compute_approx_ss_power_index_for_game(samples);
+        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check);
         for e in 0..expected.len() {
             assert_abs_diff_eq!(expected[e], actual[e], epsilon = 0.2f64);
         }
@@ -242,8 +251,9 @@ mod tests {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let samples = 100;
+        let qi_check = true;
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
-        let actual = game.compute_approx_ss_power_index_for_game(samples);
+        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check);
         for (i, _) in expected.iter().enumerate() {
             assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);
         }

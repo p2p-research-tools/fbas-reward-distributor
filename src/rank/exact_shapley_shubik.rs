@@ -9,8 +9,8 @@ impl<'a> CooperativeGame<'a> {
     /// Returns a list of scores with index 0 = node 0's score
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
-    pub(crate) fn compute_exact_ss_power_index_for_game(&self) -> Vec<Score> {
-        let top_tier = Self::get_involved_nodes(self.fbas);
+    pub(crate) fn compute_exact_ss_power_index_for_game(&self, qi_check: bool) -> Vec<Score> {
+        let top_tier = Self::get_involved_nodes(self.fbas, qi_check);
         let num_players = top_tier.len();
         let total_factorial = n_factorial(top_tier.len());
         let winning_coalitions = self.find_winning_coalitions(&top_tier);
@@ -103,7 +103,8 @@ mod tests {
     #[test]
     fn all_winning_sets_in_fbas() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
-        let top_tier = CooperativeGame::get_involved_nodes(&fbas);
+        let qi_check = true;
+        let top_tier = CooperativeGame::get_involved_nodes(&fbas, qi_check);
         let game = CooperativeGame {
             fbas: &fbas,
             players: fbas.all_nodes().iter().collect(),
@@ -150,8 +151,9 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
+        let qi_check = true;
         let expected = vec![0.333, 0.333, 0.333];
-        let actual = game.compute_exact_ss_power_index_for_game();
+        let actual = game.compute_exact_ss_power_index_for_game(qi_check);
         assert_eq!(expected, actual);
     }
 
@@ -219,8 +221,9 @@ mod tests {
         let fbas = Fbas::from_json_str(&input);
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
+        let qi_check = true;
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
-        let actual = game.compute_exact_ss_power_index_for_game();
+        let actual = game.compute_exact_ss_power_index_for_game(qi_check);
         for (i, _) in expected.iter().enumerate() {
             assert_relative_eq!(round_to_three_places(expected[i]), actual[i]);
         }

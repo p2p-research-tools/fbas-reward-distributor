@@ -37,6 +37,11 @@ struct Cli {
     /// Number of threads to use. Defaults to 1.
     #[structopt(short = "j", long = "jobs", default_value = "1")]
     jobs: usize,
+
+    /// Do not assert that the FBAS has quorum intersection before proceeding with further computations.
+    /// Default behaviour is to always check for QI.
+    #[structopt(long = "no-quorum-intersection")]
+    dont_check_for_qi: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -55,8 +60,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let tasks = make_sorted_tasklist(inputs, existing_outputs);
 
-    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone());
-    println!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
+    let qi_check = !args.dont_check_for_qi;
+    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
+    println!("Starting measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
 
     write_csv(output_iterator, &args.output_path, args.update)?;
     Ok(())
@@ -115,14 +121,15 @@ fn bulk_do(
     tasks: Vec<Task>,
     jobs: usize,
     fbas_type: FbasType,
+    qi_check: bool,
 ) -> impl Iterator<Item = ErrorDataPoint> {
     tasks
         .into_iter()
         .with_nb_threads(jobs)
-        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone()))
+        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check))
 }
 
-fn analyze_or_reuse(task: Task, fbas_type: FbasType) -> ErrorDataPoint {
+fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
     match task {
         Task::ReuseErrorData(output) => {
             eprintln!(
@@ -131,12 +138,12 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType) -> ErrorDataPoint {
             );
             output
         }
-        Task::Analyze(input) => rank(input, fbas_type),
+        Task::Analyze(input) => rank(input, fbas_type, qi_check),
         _ => panic!("Unexpected data point"),
     }
 }
 
-fn rank(input: InputDataPoint, fbas_type: FbasType) -> ErrorDataPoint {
+fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
@@ -146,41 +153,65 @@ fn rank(input: InputDataPoint, fbas_type: FbasType) -> ErrorDataPoint {
     // 2. do approx run many times
     // 3. calculate std_dev
     // 4. fill error point
-    let exact_power_index = rank_nodes(&fbas, RankingAlg::ExactPowerIndex);
+    let exact_power_index = rank_nodes(&fbas, RankingAlg::ExactPowerIndex, qi_check);
     debug!(
         "Completed power index run {} for FBAS of size {}.",
         input.run, size
     );
-    let approx_power_indices_10_pow_1 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(1), None));
+    let approx_power_indices_10_pow_1 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(1), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_1, median_abs_error_10_pow_1, mean_abs_percentage_error_10_pow_1) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_1, &exact_power_index);
-    let approx_power_indices_10_pow_2 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(2), None));
+    let approx_power_indices_10_pow_2 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(2), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_2, median_abs_error_10_pow_2, mean_abs_percentage_error_10_pow_2) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_2, &exact_power_index);
-    let approx_power_indices_10_pow_3 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(3), None));
+    let approx_power_indices_10_pow_3 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(3), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_3, median_abs_error_10_pow_3, mean_abs_percentage_error_10_pow_3) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_3, &exact_power_index);
-    let approx_power_indices_10_pow_4 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(4), None));
+    let approx_power_indices_10_pow_4 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(4), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_4, median_abs_error_10_pow_4, mean_abs_percentage_error_10_pow_4) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_4, &exact_power_index);
-    let approx_power_indices_10_pow_5 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(5), None));
+    let approx_power_indices_10_pow_5 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(5), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_5, median_abs_error_10_pow_5, mean_abs_percentage_error_10_pow_5) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_5, &exact_power_index);
-    let approx_power_indices_10_pow_6 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(6), None));
+    let approx_power_indices_10_pow_6 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(6), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_6, median_abs_error_10_pow_6, mean_abs_percentage_error_10_pow_6) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_6, &exact_power_index);
-    let approx_power_indices_10_pow_7 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(7), None));
+    let approx_power_indices_10_pow_7 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(7), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_7, &exact_power_index);
-    let approx_power_indices_10_pow_8 =
-        rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(10usize.pow(8), None));
+    let approx_power_indices_10_pow_8 = rank_nodes(
+        &fbas,
+        RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index);
     debug!(

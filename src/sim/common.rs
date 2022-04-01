@@ -25,7 +25,7 @@ impl FbasType {
         match self {
             FbasType::MobileCoin => make_almost_ideal_fbas(top_tier_size),
             FbasType::Stellar => make_almost_ideal_stellarlike_fbas(top_tier_size),
-            FbasType::NonSymmetric => make_almost_ideal_fbas(top_tier_size),
+            FbasType::NonSymmetric => make_non_symmetric_fbas(top_tier_size),
         }
     }
 }
@@ -77,6 +77,19 @@ fn make_almost_ideal_stellarlike_fbas(top_tier_size: usize) -> Fbas {
     let mut fbas = Fbas::new();
     for _ in 0..top_tier_size {
         fbas.add_generic_node(quorum_set.clone());
+    }
+    fbas
+}
+
+//remove node n-1 from the quorum sets of nodes 0..n/2
+// TODO: Complete some NaN values in output
+fn make_non_symmetric_fbas(top_tier_size: usize) -> Fbas {
+    let mut fbas = make_almost_ideal_fbas(top_tier_size);
+    for node in 0..(top_tier_size / 2) {
+        let mut quorum_set = fbas.get_quorum_set(node).unwrap();
+        quorum_set.validators.retain(|&x| x != top_tier_size - 1);
+        quorum_set.threshold -= 1;
+        fbas.swap_quorum_set(node, quorum_set);
     }
     fbas
 }

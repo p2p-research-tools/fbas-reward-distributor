@@ -44,6 +44,11 @@ struct RankCmds {
     /// Default is to use node IDs corresponding to indices in the input file.
     #[structopt(short = "p", long = "pretty")]
     pks: bool,
+
+    /// Do not assert that the FBAS has quorum intersection before proceeding with further computations.
+    /// Default behaviour is to always check for QI.
+    #[structopt(short = "nq", long = "no-quorum-intersection")]
+    dont_check_for_qi: bool,
 }
 
 /// Compute a distribution based on ranking according to selected algorithm
@@ -71,6 +76,11 @@ struct DistCmds {
     /// Default is to use node IDs corresponding to indices in the input file.
     #[structopt(short = "p", long = "pretty")]
     pks: bool,
+
+    /// Do not assert that the FBAS has quorum intersection before proceeding with further computations.
+    /// Default behaviour is to always check for QI.
+    #[structopt(long = "no-quorum-intersection")]
+    dont_check_for_qi: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -104,8 +114,14 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
     }
 }
 
-fn get_top_tier_nodes(fbas: &Fbas) -> Vec<NodeId> {
+fn get_top_tier_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
     let min_qs = fbas_analyzer::find_minimal_quorums(fbas);
+    if qi_check {
+        assert!(
+            fbas_analyzer::all_intersect(&min_qs),
+            "FBAS lacks quorum intersection!"
+        );
+    }
     let involved_nodes: Vec<NodeId> = fbas_analyzer::involved_nodes(&min_qs).into_iter().collect();
     println!("Computed top tier of size {}.", involved_nodes.len());
     involved_nodes
@@ -120,18 +136,19 @@ fn main() {
             let use_pks = cmd.pks;
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+            let qi_check = !cmd.dont_check_for_qi;
             let mut alg = get_ranking_alg_from_params(alg_cfg);
             // need to get TT if its computation should be excluded from approximation
             alg = if let RankingAlg::ApproxPowerIndex(s, tt) = alg.clone() {
                 if tt.is_some() {
-                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas)))
+                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas, qi_check)))
                 } else {
                     alg.clone()
                 }
             } else {
                 alg
             };
-            let rankings = compute_influence(&node_ids, &fbas, alg, use_pks);
+            let rankings = compute_influence(&node_ids, &fbas, alg, use_pks, qi_check);
             println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
         }
         SubCommand::Distribute(cmd) => {
@@ -141,18 +158,20 @@ fn main() {
             let use_pks = cmd.pks;
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+            let qi_check = !cmd.dont_check_for_qi;
             let mut alg = get_ranking_alg_from_params(alg_cfg);
             // need to get TT if its computation should be excluded from approximation
             alg = if let RankingAlg::ApproxPowerIndex(s, tt) = alg.clone() {
                 if tt.is_some() {
-                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas)))
+                    RankingAlg::ApproxPowerIndex(s, Some(get_top_tier_nodes(&fbas, qi_check)))
                 } else {
                     alg.clone()
                 }
             } else {
                 alg
             };
-            let allocation = distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks);
+            let allocation =
+                distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks, qi_check);
             println!(
                 "List of Distributions as (NodeId, PK, Score, Reward):\n {:?}",
                 allocation
@@ -191,8 +210,9 @@ fn compute_influence(
     fbas: &Fbas,
     alg: RankingAlg,
     use_pks: bool,
+    qi_check: bool,
 ) -> Vec<NodeRanking> {
-    let rankings = rank_nodes(fbas, alg);
+    let rankings = rank_nodes(fbas, alg, qi_check);
     create_node_ranking_report(node_ids, rankings, fbas, use_pks)
 }
 
@@ -204,12 +224,13 @@ fn distribute_rewards(
     fbas: &Fbas,
     reward_value: f64,
     use_pks: bool,
+    qi_check: bool,
 ) -> Vec<(NodeId, PublicKey, Score, Reward)> {
     let allocation = match algo {
-        RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value),
-        RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value),
+        RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value, qi_check),
+        RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value, qi_check),
         RankingAlg::ApproxPowerIndex(samples, tt) => {
-            approx_game_theory_distribution(samples, fbas, reward_value, tt)
+            approx_game_theory_distribution(samples, fbas, reward_value, tt, qi_check)
         }
     };
     create_reward_report(allocation, fbas, use_pks)

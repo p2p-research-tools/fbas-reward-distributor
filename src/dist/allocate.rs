@@ -6,9 +6,10 @@ pub fn graph_theory_distribution(
     nodes: &[NodeId],
     fbas: &Fbas,
     reward: Reward,
+    qi_check: bool,
 ) -> Vec<(NodeId, Score, Reward)> {
     let mut rewards = Vec::default();
-    let scores = compute_node_rank_for_fbas(nodes, fbas);
+    let scores = compute_node_rank_for_fbas(nodes, fbas, qi_check);
     let node_rank_sum: Score = scores.iter().map(|&v| v as Score).sum();
     for (node, node_score) in scores.iter().enumerate() {
         // normalise values nr/sum(nr)
@@ -20,9 +21,13 @@ pub fn graph_theory_distribution(
 }
 
 /// Distribute rewards proportionally to SS power index and return a map of NodeId, score, reward
-pub fn exact_game_theory_distribution(fbas: &Fbas, reward: Reward) -> Vec<(NodeId, Score, Reward)> {
+pub fn exact_game_theory_distribution(
+    fbas: &Fbas,
+    reward: Reward,
+    qi_check: bool,
+) -> Vec<(NodeId, Score, Reward)> {
     let game = new_game_from_fbas(fbas);
-    let scores = game.compute_exact_ss_power_index_for_game();
+    let scores = game.compute_exact_ss_power_index_for_game(qi_check);
     allocate_reward_to_players(scores, reward)
 }
 
@@ -32,6 +37,7 @@ pub fn approx_game_theory_distribution(
     fbas: &Fbas,
     reward: Reward,
     top_tier: Option<Vec<NodeId>>,
+    qi_check: bool,
 ) -> Vec<(NodeId, Score, Reward)> {
     let game = if let Some(tt) = top_tier {
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
@@ -39,7 +45,7 @@ pub fn approx_game_theory_distribution(
     } else {
         new_game_from_fbas(fbas)
     };
-    let scores = game.compute_approx_ss_power_index_for_game(num_samples);
+    let scores = game.compute_approx_ss_power_index_for_game(num_samples, qi_check);
     allocate_reward_to_players(scores, reward)
 }
 
@@ -69,8 +75,9 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let reward = 1.0;
-        let noderanks = compute_node_rank_for_fbas(&all_nodes, &fbas);
-        let actual = graph_theory_distribution(&all_nodes, &fbas, reward);
+        let qi_check = true;
+        let noderanks = compute_node_rank_for_fbas(&all_nodes, &fbas, qi_check);
+        let actual = graph_theory_distribution(&all_nodes, &fbas, reward, qi_check);
         let expected = vec![
             (0, noderanks[0], round_to_three_places(reward / 3.0)),
             (1, noderanks[1], round_to_three_places(reward / 3.0)),
@@ -83,7 +90,8 @@ mod tests {
     fn allocate_rewards_simple_fbas_exact_powerindex() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let reward = 1.0;
-        let actual = exact_game_theory_distribution(&fbas, reward);
+        let qi_check = true;
+        let actual = exact_game_theory_distribution(&fbas, reward, qi_check);
         let expected = vec![
             (0, 0.333, round_to_three_places(reward / 3.0)),
             (1, 0.333, round_to_three_places(reward / 3.0)),
@@ -96,7 +104,10 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let samples = 100;
         let reward = 10.0;
-        let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward, None);
+        let computed_top_tier = None;
+        let qi_check = true;
+        let actual_rewards =
+            approx_game_theory_distribution(samples, &fbas, reward, computed_top_tier, qi_check);
         let expected_rewards = vec![
             (0, 1.0 / 3.0, reward / 3.0),
             (1, 1.0 / 3.0, reward / 3.0),

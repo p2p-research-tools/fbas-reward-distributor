@@ -5,7 +5,18 @@ use std::collections::{HashMap, HashSet};
 
 /// NodeRank is an extension of PageRank proposed by Kim et al. in the paper 'Is Stellar as Secure
 /// As You Think?'.
-pub(crate) fn compute_node_rank_for_fbas(nodes: &[NodeId], fbas: &Fbas) -> Vec<Score> {
+pub(crate) fn compute_node_rank_for_fbas(
+    nodes: &[NodeId],
+    fbas: &Fbas,
+    qi_check: bool,
+) -> Vec<Score> {
+    if qi_check {
+        println!("Ensuring the FBAS has quorum intersection.");
+        assert!(
+            fbas_analyzer::all_intersect(&fbas_analyzer::find_minimal_quorums(fbas)),
+            "FBAS lacks quorum intersection!"
+        );
+    }
     let page_rank_scores = fbas.rank_nodes();
     // A map of <NodeID, [qsets node is in]>
     let sets_involving_node: HashMap<NodeId, HashSet<QuorumSet>> = nodes
@@ -67,7 +78,8 @@ mod tests {
         let pr_scores = fbas.rank_nodes();
         let node_weight = 0.666; // calculated manually
         let pr_sum: Score = pr_scores.iter().map(|&v| v as Score).sum();
-        let actual = compute_node_rank_for_fbas(&all_nodes, &fbas);
+        let qi_check = true;
+        let actual = compute_node_rank_for_fbas(&all_nodes, &fbas, qi_check);
         let expected = vec![
             pr_sum * node_weight,
             pr_sum * node_weight,

@@ -135,7 +135,8 @@ mod tests {
     fn node_rankings_output_is_correct() {
         let fbas = read_fbas_from_str();
         let nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-        let scores = compute_node_rank_for_fbas(&nodes, &fbas);
+        let qi_check = true;
+        let scores = compute_node_rank_for_fbas(&nodes, &fbas, qi_check);
         let actual = create_node_ranking_report(&nodes, scores.to_owned(), &fbas, true);
         let expected = vec![
             (0, String::from("node0"), scores[0]),
@@ -151,7 +152,8 @@ mod tests {
         let fbas = read_fbas_from_str();
         let nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
         let reward = 10.0;
-        let dist = graph_theory_distribution(&nodes, &fbas, reward);
+        let qi_check = true;
+        let dist = graph_theory_distribution(&nodes, &fbas, reward, qi_check);
         let actual = create_reward_report(dist.to_owned(), &fbas, true);
         let expected = vec![
             (0, String::from("node0"), dist[0].1, dist[0].2),

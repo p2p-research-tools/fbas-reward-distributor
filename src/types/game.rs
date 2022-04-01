@@ -42,8 +42,15 @@ impl<'a> CooperativeGame<'a> {
         coalition.len()
     }
 
-    pub(crate) fn get_involved_nodes(fbas: &Fbas) -> Vec<NodeId> {
+    pub(crate) fn get_involved_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
         let min_quorums = fbas_analyzer::find_minimal_quorums(fbas);
+        if qi_check {
+            println!("Ensuring the FBAS has quorum intersection.");
+            assert!(
+                fbas_analyzer::all_intersect(&min_quorums),
+                "FBAS lacks quorum intersection!"
+            );
+        }
         fbas_analyzer::involved_nodes(&min_quorums)
             .into_iter()
             .collect()
@@ -53,14 +60,15 @@ impl<'a> CooperativeGame<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fbas_analyzer::bitset;
+    use fbas_analyzer::{bitset, QuorumSet};
     use std::path::Path;
 
     #[test]
     fn mqs_contained_nodes() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let expected = vec![0, 1, 2];
-        let actual = CooperativeGame::get_involved_nodes(&fbas);
+        let qi_check = true;
+        let actual = CooperativeGame::get_involved_nodes(&fbas, qi_check);
         assert_eq!(expected, actual);
     }
 
@@ -164,7 +172,7 @@ mod tests {
             vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
             vec![bitset![0, 3, 4], bitset![0, 2, 3, 4], bitset![0, 1, 3, 4]],
         ];
-        let top_tier = CooperativeGame::get_involved_nodes(&fbas);
+        let top_tier = CooperativeGame::get_involved_nodes(&fbas, true);
         let winning = game.find_winning_coalitions(&top_tier);
         let actual: Vec<Vec<Coalition>> = game
             .players
@@ -180,7 +188,7 @@ mod tests {
     fn init_game_with_tt() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
-        let tt = CooperativeGame::get_involved_nodes(&fbas);
+        let tt = CooperativeGame::get_involved_nodes(&fbas, true);
         let expected = CooperativeGame {
             fbas: &fbas,
             players: vec![0, 1, 2],
@@ -188,5 +196,28 @@ mod tests {
         };
         let actual = CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, &fbas);
         assert_eq!(expected, actual);
+    }
+
+    #[should_panic]
+    #[test]
+    fn fbas_wo_intersection_panics() {
+        let mut fbas = Fbas::new();
+        fbas.add_generic_node(QuorumSet {
+            validators: vec![0],
+            threshold: 1,
+            inner_quorum_sets: vec![],
+        });
+        fbas.add_generic_node(QuorumSet {
+            validators: vec![1],
+            threshold: 1,
+            inner_quorum_sets: vec![],
+        });
+        fbas.add_generic_node(QuorumSet {
+            validators: vec![2],
+            threshold: 1,
+            inner_quorum_sets: vec![],
+        });
+        let qi_check = true;
+        let _ = CooperativeGame::get_involved_nodes(&fbas, qi_check);
     }
 }
