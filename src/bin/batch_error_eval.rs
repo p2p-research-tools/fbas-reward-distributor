@@ -148,11 +148,6 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
-    // idea
-    // 1. do exact -> how to reuse
-    // 2. do approx run many times
-    // 3. calculate std_dev
-    // 4. fill error point
     let exact_power_index = rank_nodes(&fbas, RankingAlg::ExactPowerIndex, qi_check);
     debug!(
         "Completed power index run {} for FBAS of size {}.",
@@ -207,11 +202,15 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_7, &exact_power_index);
-    let approx_power_indices_10_pow_8 = rank_nodes(
-        &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
-        qi_check,
-    );
+    let approx_power_indices_10_pow_8 = if input.top_tier_size <= 27 {
+        rank_nodes(
+            &fbas,
+            RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
+            qi_check,
+        )
+    } else {
+        Vec::default()
+    };
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index);
     debug!(

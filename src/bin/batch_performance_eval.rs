@@ -195,11 +195,15 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         RankingAlg::ApproxPowerIndex(10usize.pow(7), None),
         qi_check
     ));
-    let (_, duration_approx_power_indices_10_pow_8) = timed_secs!(rank_nodes(
-        &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
-        qi_check
-    ));
+    let (_, duration_approx_power_indices_10_pow_8) = if input.top_tier_size <= 27 {
+        timed_secs!(rank_nodes(
+            &fbas,
+            RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
+            qi_check
+        ))
+    } else {
+        (Vec::default(), 0.0)
+    };
     debug!("Completed 10⁸ approximation for FBAS of size {}.", size);
     debug!(
         "Completed Approximation run {} for FBAS of size {}.",
@@ -246,11 +250,15 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         RankingAlg::ApproxPowerIndex(10usize.pow(7), Some(top_tier_nodes.clone())),
         qi_check
     ));
-    let (_, duration_after_mq_approx_power_indices_10_pow_8) = timed_secs!(rank_nodes(
-        &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(8), Some(top_tier_nodes)),
-        qi_check
-    ));
+    let (_, duration_after_mq_approx_power_indices_10_pow_8) = if input.top_tier_size <= 27 {
+        timed_secs!(rank_nodes(
+            &fbas,
+            RankingAlg::ApproxPowerIndex(10usize.pow(8), Some(top_tier_nodes)),
+            qi_check
+        ))
+    } else {
+        (Vec::default(), 0.0)
+    };
     debug!(
         "Completed 10⁸ approximation with precomputed top tier for FBAS of size {}.",
         size
