@@ -1,7 +1,7 @@
 use fbas_reward_distributor::*;
 
 use env_logger::Env;
-use log::{debug, info};
+use log::info;
 use par_map::ParMap;
 use std::{collections::BTreeMap, error::Error, io, path::PathBuf};
 use structopt::StructOpt;
@@ -149,8 +149,12 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
     let exact_power_index = rank_nodes(&fbas, RankingAlg::ExactPowerIndex, qi_check);
-    debug!(
+    info!(
         "Completed power index run {} for FBAS of size {}.",
+        input.run, size
+    );
+    info!(
+        "Starting 10^1 approximation run {} for FBAS of size {}.",
         input.run, size
     );
     let approx_power_indices_10_pow_1 = rank_nodes(
@@ -160,6 +164,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_1, median_abs_error_10_pow_1, mean_abs_percentage_error_10_pow_1) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_1, &exact_power_index);
+    info!("Completed 10^1 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^2 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_2 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(2), None),
@@ -167,6 +176,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_2, median_abs_error_10_pow_2, mean_abs_percentage_error_10_pow_2) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_2, &exact_power_index);
+    info!("Completed 10^2 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^3 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_3 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(3), None),
@@ -174,6 +188,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_3, median_abs_error_10_pow_3, mean_abs_percentage_error_10_pow_3) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_3, &exact_power_index);
+    info!("Completed 10^3 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^4 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_4 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(4), None),
@@ -181,6 +200,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_4, median_abs_error_10_pow_4, mean_abs_percentage_error_10_pow_4) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_4, &exact_power_index);
+    info!("Completed 10^4 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^5 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_5 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(5), None),
@@ -188,6 +212,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_5, median_abs_error_10_pow_5, mean_abs_percentage_error_10_pow_5) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_5, &exact_power_index);
+    info!("Completed 10^5 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^6 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_6 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(6), None),
@@ -195,6 +224,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_6, median_abs_error_10_pow_6, mean_abs_percentage_error_10_pow_6) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_6, &exact_power_index);
+    info!("Completed 10^6 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^7 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_7 = rank_nodes(
         &fbas,
         RankingAlg::ApproxPowerIndex(10usize.pow(7), None),
@@ -202,6 +236,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_7, &exact_power_index);
+    info!("Completed 10^7 approximation for FBAS of size {}.", size);
+    info!(
+        "Starting 10^8 approximation run {} for FBAS of size {}.",
+        input.run, size
+    );
     let approx_power_indices_10_pow_8 = if input.top_tier_size <= 27 {
         rank_nodes(
             &fbas,
@@ -213,8 +252,8 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     };
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =
         mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index);
-    debug!(
-        "Completed Approximation run {} for FBAS of size {}.",
+    info!(
+        "Completed 10^8 Approximation run {} for FBAS of size {}.",
         input.run, size
     );
 
