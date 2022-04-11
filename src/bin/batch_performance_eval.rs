@@ -242,14 +242,14 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         "Starting 10^8 approximation run {} for FBAS of size {}.",
         input.run, size
     );
-    let (_, duration_approx_power_indices_10_pow_8) = if input.top_tier_size <= 27 {
+    let (_, duration_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
         timed_secs!(rank_nodes(
             &fbas,
             RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
             qi_check
         ))
     } else {
-        (Vec::default(), 0.0)
+        (Vec::default(), f64::NAN)
     };
     debug!("Completed 10^8 approximation for FBAS of size {}.", size);
     debug!(
@@ -355,14 +355,14 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         "Starting 10^8 approximation w/o TT run {} for FBAS of size {}.",
         input.run, size
     );
-    let (_, duration_after_mq_approx_power_indices_10_pow_8) = if input.top_tier_size <= 27 {
+    let (_, duration_after_mq_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
         timed_secs!(rank_nodes(
             &fbas,
             RankingAlg::ApproxPowerIndex(10usize.pow(8), Some(top_tier_nodes)),
             qi_check
         ))
     } else {
-        (Vec::default(), 0.0)
+        (Vec::default(), f64::NAN)
     };
     info!(
         "Completed 10^8 approximation with precomputed top tier for FBAS of size {}.",

@@ -50,6 +50,8 @@ impl<'a> CooperativeGame<'a> {
                 fbas_analyzer::all_intersect(&min_quorums),
                 "FBAS lacks quorum intersection!"
             );
+        } else {
+            println!("Skipping quorum intersection check.");
         }
         fbas_analyzer::involved_nodes(&min_quorums)
             .into_iter()

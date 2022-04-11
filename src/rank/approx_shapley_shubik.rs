@@ -17,6 +17,7 @@ impl<'a> CooperativeGame<'a> {
         // Because the TT is computed out of this function, we assume the check for     QI has
         // already been done if we got this far
         let top_tier = if let Some(tt) = self.top_tier.clone() {
+            println!("Game already initialised with involved nodes..");
             tt
         } else {
             Self::get_involved_nodes(self.fbas, qi_check)
