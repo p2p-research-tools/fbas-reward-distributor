@@ -1,10 +1,25 @@
 use fbas_reward_distributor::*;
 
 use env_logger::Env;
+use fbas_analyzer::Fbas;
+use lazy_static::lazy_static;
 use log::info;
 use par_map::ParMap;
-use std::{collections::BTreeMap, error::Error, io, path::PathBuf};
+use std::{
+    collections::{BTreeMap, HashMap},
+    error::Error,
+    io,
+    path::PathBuf,
+    sync::Mutex,
+};
 use structopt::StructOpt;
+
+lazy_static! {
+    static ref TRUTH_VALUES: Mutex<HashMap<usize, Vec<Score>>> = {
+        let truth = HashMap::default();
+        Mutex::new(truth)
+    };
+}
 
 /// Run performance measurements on different sized FBASs based on the input parameters.
 #[derive(Debug, StructOpt)]
@@ -62,9 +77,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let qi_check = !args.dont_check_for_qi;
     let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
-    println!("Starting measurements for {:?} like FBAS with upto {} nodes.\n
-             Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs
-             );
+    println!(
+        "Starting measurements for {:?} like FBAS with upto {} nodes.\n
+             Performing {} iterations per FBAS.",
+        fbas_type, args.max_top_tier_size, args.runs
+    );
 
     write_csv(output_iterator, &args.output_path, args.update)?;
     Ok(())
@@ -145,16 +162,31 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> ErrorDat
     }
 }
 
+fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> Vec<Score> {
+    let cache_scores = get_scores_from_cache(fbas_size);
+
+    let exact_scores = if let Some(scores) = cache_scores {
+        info!("Found power index scores for {} nodes in cache.", fbas_size);
+        scores
+    } else {
+        info!(
+            "Computing ExactPowerIndex for FBAS with {} nodes",
+            fbas_size
+        );
+        let exact_power_index = rank_nodes(fbas, RankingAlg::ExactPowerIndex, qi_check);
+        info!("Completed power index for FBAS of size {}.", fbas_size);
+        add_to_cache(fbas_size, exact_power_index.clone());
+        exact_power_index
+    };
+    exact_scores
+}
+
 fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
+    let exact_power_index = get_or_compute_truth_value(size, &fbas, qi_check);
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
-    let exact_power_index = rank_nodes(&fbas, RankingAlg::ExactPowerIndex, qi_check);
-    info!(
-        "Completed power index run {} for FBAS of size {}.",
-        input.run, size
-    );
     info!(
         "Starting 10^1 approximation run {} for FBAS of size {}.",
         input.run, size
@@ -310,4 +342,12 @@ fn write_csv(
     } else {
         write_csv_to_stdout(data_points)
     }
+}
+
+fn get_scores_from_cache(fbas_size: usize) -> Option<Vec<Score>> {
+    TRUTH_VALUES.lock().unwrap().get(&fbas_size).cloned()
+}
+
+fn add_to_cache(fbas_size: usize, scores: Vec<Score>) {
+    TRUTH_VALUES.lock().unwrap().insert(fbas_size, scores);
 }
