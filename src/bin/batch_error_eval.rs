@@ -62,7 +62,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let qi_check = !args.dont_check_for_qi;
     let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
-    println!("Starting measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
+    println!("Starting measurements for {:?} like FBAS with upto {} nodes.\n
+             Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs
+             );
 
     write_csv(output_iterator, &args.output_path, args.update)?;
     Ok(())
@@ -241,7 +243,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
         "Starting 10^8 approximation run {} for FBAS of size {}.",
         input.run, size
     );
-    let approx_power_indices_10_pow_8 = if input.top_tier_size <= 27 {
+    let approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
         rank_nodes(
             &fbas,
             RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
@@ -251,7 +253,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
         Vec::default()
     };
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =
-        mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index);
+        if input.top_tier_size <= 23 {
+            mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index)
+        } else {
+            (f64::NAN, f64::NAN, f64::NAN)
+        };
     info!(
         "Completed 10^8 Approximation run {} for FBAS of size {}.",
         input.run, size
