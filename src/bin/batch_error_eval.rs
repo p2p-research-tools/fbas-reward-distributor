@@ -173,7 +173,7 @@ fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> 
             "Computing ExactPowerIndex for FBAS with {} nodes",
             fbas_size
         );
-        let exact_power_index = rank_nodes(fbas, RankingAlg::ExactPowerIndex, qi_check);
+        let exact_power_index = rank_nodes(fbas, RankingAlg::ExactPowerIndex(None), qi_check);
         info!("Completed power index for FBAS of size {}.", fbas_size);
         add_to_cache(fbas_size, exact_power_index.clone());
         exact_power_index

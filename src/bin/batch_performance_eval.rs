@@ -162,8 +162,11 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         "Starting power index run {} for FBAS of size {}.",
         input.run, size
     );
-    let (_, duration_exact_power_index) =
-        timed_secs!(rank_nodes(&fbas, RankingAlg::ExactPowerIndex, qi_check));
+    let (_, duration_exact_power_index) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ExactPowerIndex(None),
+        qi_check
+    ));
     debug!(
         "Completed power index run {} for FBAS of size {}.",
         input.run, size
@@ -260,9 +263,19 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
             .iter()
             .collect();
-    debug!(
-        "Got top tier for current FBAS of {} nodes",
-        fbas.number_of_nodes()
+
+    info!(
+        "Starting power index w/o TT run {} for FBAS of size {}",
+        input.run, size
+    );
+    let (_, duration_after_mq_exact_power_index) = timed_secs!(rank_nodes(
+        &fbas,
+        RankingAlg::ExactPowerIndex(Some(top_tier_nodes.clone())),
+        qi_check
+    ));
+    info!(
+        "Completed power index w/o TT run {} for FBAS of size {}.",
+        input.run, size
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
         &fbas,
@@ -382,6 +395,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
         duration_approx_power_indices_10_pow_6,
         duration_approx_power_indices_10_pow_7,
         duration_approx_power_indices_10_pow_8,
+        duration_after_mq_exact_power_index,
         duration_after_mq_approx_power_indices_10_pow_1,
         duration_after_mq_approx_power_indices_10_pow_2,
         duration_after_mq_approx_power_indices_10_pow_3,

@@ -36,6 +36,7 @@ pub struct PerfDataPoint {
     pub duration_approx_power_indices_10_pow_6: f64,
     pub duration_approx_power_indices_10_pow_7: f64,
     pub duration_approx_power_indices_10_pow_8: f64,
+    pub duration_after_mq_exact_power_index: f64,
     pub duration_after_mq_approx_power_indices_10_pow_1: f64,
     pub duration_after_mq_approx_power_indices_10_pow_2: f64,
     pub duration_after_mq_approx_power_indices_10_pow_3: f64,

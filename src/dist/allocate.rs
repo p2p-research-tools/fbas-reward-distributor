@@ -24,9 +24,15 @@ pub fn graph_theory_distribution(
 pub fn exact_game_theory_distribution(
     fbas: &Fbas,
     reward: Reward,
+    top_tier: Option<Vec<NodeId>>,
     qi_check: bool,
 ) -> Vec<(NodeId, Score, Reward)> {
-    let game = new_game_from_fbas(fbas);
+    let game = if let Some(tt) = top_tier {
+        let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
+        CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, fbas)
+    } else {
+        new_game_from_fbas(fbas)
+    };
     let scores = game.compute_exact_ss_power_index_for_game(qi_check);
     allocate_reward_to_players(scores, reward)
 }
@@ -91,7 +97,7 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let reward = 1.0;
         let qi_check = true;
-        let actual = exact_game_theory_distribution(&fbas, reward, qi_check);
+        let actual = exact_game_theory_distribution(&fbas, reward, None, qi_check);
         let expected = vec![
             (0, 0.333, round_to_three_places(reward / 3.0)),
             (1, 0.333, round_to_three_places(reward / 3.0)),
@@ -117,5 +123,19 @@ mod tests {
             let actual = actual_rewards[i];
             assert_abs_diff_eq!(expected.1, actual.1, epsilon = 0.2f64);
         }
+    }
+    #[test]
+    fn allocate_rewards_simple_fbas_exact_powerindex_with_toptier() {
+        let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
+        let reward = 1.0;
+        let top_tier = vec![0, 1, 2];
+        let qi_check = true;
+        let actual = exact_game_theory_distribution(&fbas, reward, Some(top_tier), qi_check);
+        let expected = vec![
+            (0, 0.333, round_to_three_places(reward / 3.0)),
+            (1, 0.333, round_to_three_places(reward / 3.0)),
+            (2, 0.333, round_to_three_places(reward / 3.0)),
+        ];
+        assert_eq!(expected, actual);
     }
 }

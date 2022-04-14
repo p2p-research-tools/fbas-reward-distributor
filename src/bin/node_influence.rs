@@ -89,7 +89,9 @@ enum RankingAlgConfig {
     NodeRank,
     /// Use Shapley-Shubik power indices to calculate nodes' importance in the FBAS. Not
     /// recommended for FBAS with many players because of time complexity
-    ExactPowerIndex,
+    /// The computation of minimal quorums can optionally be done before we start approximation.
+    /// Useful, e.g. for timing measurements.
+    ExactPowerIndex { exclude_tt_comp: Option<bool> },
     /// Approximate Shapley values as a measure of nodes' importance in the FBAS. The number of
     /// samples to use must be passed if selected.
     /// The computation of minimal quorums can optionally be done before we start approximation.
@@ -103,7 +105,13 @@ enum RankingAlgConfig {
 fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
     match cfg {
         RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
-        RankingAlgConfig::ExactPowerIndex => RankingAlg::ExactPowerIndex,
+        RankingAlgConfig::ExactPowerIndex { exclude_tt_comp } => {
+            if let Some(true) = exclude_tt_comp {
+                RankingAlg::ExactPowerIndex(Some(Vec::default()))
+            } else {
+                RankingAlg::ExactPowerIndex(None)
+            }
+        }
         RankingAlgConfig::ApproxPowerIndex { s, exclude_tt_comp } => {
             if let Some(true) = exclude_tt_comp {
                 RankingAlg::ApproxPowerIndex(s, Some(Vec::default()))
@@ -228,7 +236,9 @@ fn distribute_rewards(
 ) -> Vec<(NodeId, PublicKey, Score, Reward)> {
     let allocation = match algo {
         RankingAlg::NodeRank => graph_theory_distribution(nodes, fbas, reward_value, qi_check),
-        RankingAlg::ExactPowerIndex => exact_game_theory_distribution(fbas, reward_value, qi_check),
+        RankingAlg::ExactPowerIndex(tt) => {
+            exact_game_theory_distribution(fbas, reward_value, tt, qi_check)
+        }
         RankingAlg::ApproxPowerIndex(samples, tt) => {
             approx_game_theory_distribution(samples, fbas, reward_value, tt, qi_check)
         }

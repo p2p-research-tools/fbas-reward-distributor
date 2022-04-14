@@ -10,7 +10,14 @@ impl<'a> CooperativeGame<'a> {
     /// A coalition is winning if it contains a quorum in the FBAS, otherwise losing
     /// See C. Ndolo Master's thesis for details
     pub(crate) fn compute_exact_ss_power_index_for_game(&self, qi_check: bool) -> Vec<Score> {
-        let top_tier = Self::get_involved_nodes(self.fbas, qi_check);
+        // Because the TT is computed out of this function, we assume the check for     QI has
+        // already been done if we got this far
+        let top_tier = if let Some(tt) = self.top_tier.clone() {
+            println!("Game already initialised with involved nodes..");
+            tt
+        } else {
+            Self::get_involved_nodes(self.fbas, qi_check)
+        };
         let num_players = top_tier.len();
         let total_factorial = n_factorial(top_tier.len());
         let winning_coalitions = self.find_winning_coalitions(&top_tier);
