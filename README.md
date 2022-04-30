@@ -59,8 +59,22 @@ cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json approx-po
 
 The output is a sorted list of tuples: (NodeID, Public Key (where available), Ranking).
 
-## 3. Performance measurements
+## 3. Performance and approximation measurements
+
+Build with
 
 ```
-cargo run --release --bin performance_tests --features="measurements"
+cargo build --release --features "measurements"
+```
+
+then run performance measurements
+
+```
+target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
+```
+
+and approximation measurements
+
+```
+target/release/approximation_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
 ```
