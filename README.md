@@ -12,10 +12,10 @@ The framework is suitable for usage as both a binary and a library and can mainl
 
 ## Required toolchain
 
-    - A working [Rust](https://www.rust-lang.org) environment
-        - Install: https://www.rust-lang.org/tools/install
+- A working [Rust](https://www.rust-lang.org) environment
+    - Install: https://www.rust-lang.org/tools/install
 
-    - A minimal gcc and g++ toolchain is required by some of the dependencies.
+- A minimal gcc and g++ toolchain is required by some of the dependencies.
 
 ## Build and optionally run tests
 
@@ -42,6 +42,7 @@ cargo run --release -- {distribute | rank} [-i -p -r reward] <fbas-path> {node-r
 
 The rank subcommand is similar to distribute only with the exception that it only calculates the nodes' weights without allocating rewards.
 The output is always a sorted list of tuples: (NodeID, Public Key (where available), Ranking, [Reward]).
+
 ```
 2. Compute how 10 units should be distributed among the nodes in the `mobilecoin_nodes_2021-10-22.json` using a graph-theoretic (Noderank) metric.
 ```
@@ -68,16 +69,6 @@ fbas-reward-distributor = { version = "0.1", default-features = true }
 
 See the [fbas-graph-generator](https://gitlab.informatik.hu-berlin.de/ti/theses/student-content/ndolo-charmaine-ma/fbas-graph-generator) for some examples.
 
-## Ranking the nodes
-
-The tool also supports calculating rankings alone using the implemented metrics via the `rank` subcommand.
-
-```
-cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-index-approx 1000
-```
-
-The output is a sorted list of tuples: (NodeID, Public Key (where available), Ranking).
-
 ## Performance and approximation measurements
 
 1. Build with
@@ -90,7 +81,7 @@ cargo build --release --features "measurements"
 ```
 target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
 ```
-3. and approximation measurements
+3. and/or approximation measurements
 
 ```
 target/release/approximation_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
