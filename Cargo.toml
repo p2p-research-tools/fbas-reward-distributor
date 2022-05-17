@@ -1,10 +1,12 @@
 [package]
-name = "fbas_reward_distributor"
+name = "fbas-reward-distributor"
 version = "0.1.0"
 edition = "2021"
 authors = ["Charmaine Ndolo <Charmaine.Ndolo@hu-berlin.de>"]
 license = "MIT"
 readme = "./README.md"
+keywords = ["stellar", "fbas", "mobilecoin", "centrality", "blockchain", "shapley-value"]
+categories = ["command-line-utilities", "science", "ranking"]
 default-run = "reward_distributor"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -50,4 +52,3 @@ lazy_static = {version = "1.4.0", optional = true}
 approx = "0.5.1"
 assert_cmd = "2.0.4"
 predicates = "2.1.1"
-criterion = "0.3"
