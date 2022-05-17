@@ -169,11 +169,8 @@ fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> 
         info!("Found power index scores for {} nodes in cache.", fbas_size);
         scores
     } else {
-        info!(
-            "Computing ExactPowerIndex for FBAS with {} nodes",
-            fbas_size
-        );
-        let exact_power_index = rank_nodes(fbas, RankingAlg::ExactPowerIndex(None), qi_check);
+        info!("Computing PowerIndexEnum for FBAS with {} nodes", fbas_size);
+        let exact_power_index = rank_nodes(fbas, RankingAlg::PowerIndexEnum(None), qi_check);
         info!("Completed power index for FBAS of size {}.", fbas_size);
         add_to_cache(fbas_size, exact_power_index.clone());
         exact_power_index
@@ -193,7 +190,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_1 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(1), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(1), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_1, median_abs_error_10_pow_1, mean_abs_percentage_error_10_pow_1) =
@@ -205,7 +202,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_2 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(2), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(2), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_2, median_abs_error_10_pow_2, mean_abs_percentage_error_10_pow_2) =
@@ -217,7 +214,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_3 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(3), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(3), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_3, median_abs_error_10_pow_3, mean_abs_percentage_error_10_pow_3) =
@@ -229,7 +226,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_4 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(4), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(4), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_4, median_abs_error_10_pow_4, mean_abs_percentage_error_10_pow_4) =
@@ -241,7 +238,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_5 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(5), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(5), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_5, median_abs_error_10_pow_5, mean_abs_percentage_error_10_pow_5) =
@@ -253,7 +250,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_6 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(6), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(6), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_6, median_abs_error_10_pow_6, mean_abs_percentage_error_10_pow_6) =
@@ -265,7 +262,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_7 = rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(7), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(7), None),
         qi_check,
     );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
@@ -278,7 +275,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     let approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
         rank_nodes(
             &fbas,
-            RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
+            RankingAlg::PowerIndexApprox(10usize.pow(8), None),
             qi_check,
         )
     } else {

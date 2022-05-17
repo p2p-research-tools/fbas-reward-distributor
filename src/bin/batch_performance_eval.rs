@@ -164,7 +164,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_exact_power_index) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ExactPowerIndex(None),
+        RankingAlg::PowerIndexEnum(None),
         qi_check
     ));
     debug!(
@@ -177,7 +177,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(1), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(1), None),
         qi_check
     ));
     info!("Completed 10^1 approximation for FBAS of size {}.", size);
@@ -187,7 +187,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_2) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(2), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(2), None),
         qi_check
     ));
     info!("Completed 10^2 approximation for FBAS of size {}.", size);
@@ -197,7 +197,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_3) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(3), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(3), None),
         qi_check
     ));
     info!("Completed 10^3 approximation for FBAS of size {}.", size);
@@ -207,7 +207,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_4) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(4), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(4), None),
         qi_check
     ));
     info!("Completed 10^4 approximation for FBAS of size {}.", size);
@@ -217,7 +217,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_5) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(5), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(5), None),
         qi_check
     ));
     info!("Completed 10^5 approximation for FBAS of size {}.", size);
@@ -227,7 +227,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_6) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(6), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(6), None),
         qi_check
     ));
     info!("Completed 10^6 approximation for FBAS of size {}.", size);
@@ -237,7 +237,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_approx_power_indices_10_pow_7) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(7), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(7), None),
         qi_check
     ));
     info!("Completed 10^7 approximation for FBAS of size {}.", size);
@@ -248,7 +248,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     let (_, duration_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
         timed_secs!(rank_nodes(
             &fbas,
-            RankingAlg::ApproxPowerIndex(10usize.pow(8), None),
+            RankingAlg::PowerIndexApprox(10usize.pow(8), None),
             qi_check
         ))
     } else {
@@ -270,7 +270,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_exact_power_index) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ExactPowerIndex(Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexEnum(Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -279,7 +279,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(1), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(1), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -292,7 +292,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_2) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(2), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(2), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -305,7 +305,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_3) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(3), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(3), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -318,7 +318,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_4) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(4), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(4), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -331,7 +331,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_5) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(5), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(5), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -344,7 +344,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_6) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(6), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(6), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -357,7 +357,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     );
     let (_, duration_after_mq_approx_power_indices_10_pow_7) = timed_secs!(rank_nodes(
         &fbas,
-        RankingAlg::ApproxPowerIndex(10usize.pow(7), Some(top_tier_nodes.clone())),
+        RankingAlg::PowerIndexApprox(10usize.pow(7), Some(top_tier_nodes.clone())),
         qi_check
     ));
     info!(
@@ -371,7 +371,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataP
     let (_, duration_after_mq_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
         timed_secs!(rank_nodes(
             &fbas,
-            RankingAlg::ApproxPowerIndex(10usize.pow(8), Some(top_tier_nodes)),
+            RankingAlg::PowerIndexApprox(10usize.pow(8), Some(top_tier_nodes)),
             qi_check
         ))
     } else {

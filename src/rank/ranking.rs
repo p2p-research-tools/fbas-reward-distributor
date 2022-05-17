@@ -5,7 +5,7 @@ use fbas_analyzer::{Fbas, NodeId};
 pub fn rank_nodes(fbas: &Fbas, ranking_algo: RankingAlg, qi_check: bool) -> Vec<Score> {
     let all_nodes: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
     match ranking_algo {
-        RankingAlg::ExactPowerIndex(top_tier) => {
+        RankingAlg::PowerIndexEnum(top_tier) => {
             if let Some(tt) = top_tier {
                 CooperativeGame::compute_exact_ss_power_index_for_game(
                     &CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, fbas),
@@ -18,7 +18,7 @@ pub fn rank_nodes(fbas: &Fbas, ranking_algo: RankingAlg, qi_check: bool) -> Vec<
                 )
             }
         }
-        RankingAlg::ApproxPowerIndex(samples, top_tier) => {
+        RankingAlg::PowerIndexApprox(samples, top_tier) => {
             if let Some(tt) = top_tier {
                 CooperativeGame::compute_approx_ss_power_index_for_game(
                     &CooperativeGame::init_from_fbas_with_top_tier(&all_nodes, &tt, fbas),
@@ -55,7 +55,7 @@ mod tests {
     fn rank_nodes_with_power_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = true;
-        let actual = rank_nodes(&fbas, RankingAlg::ExactPowerIndex(None), qi_check);
+        let actual = rank_nodes(&fbas, RankingAlg::PowerIndexEnum(None), qi_check);
         let expected = vec![0.333, 0.333, 0.333];
         assert_eq!(expected, actual);
     }
@@ -63,7 +63,7 @@ mod tests {
     fn rank_nodes_with_approx_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = true;
-        let actual = rank_nodes(&fbas, RankingAlg::ApproxPowerIndex(100, None), qi_check);
+        let actual = rank_nodes(&fbas, RankingAlg::PowerIndexApprox(100, None), qi_check);
         let expected = vec![0.333, 0.333, 0.333];
         for i in 0..expected.len() {
             assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);
@@ -76,7 +76,7 @@ mod tests {
         let top_tier = CooperativeGame::get_involved_nodes(&fbas, qi_check);
         let actual = rank_nodes(
             &fbas,
-            RankingAlg::ApproxPowerIndex(100, Some(top_tier)),
+            RankingAlg::PowerIndexApprox(100, Some(top_tier)),
             false,
         );
         let expected = vec![0.333, 0.333, 0.333];
@@ -89,7 +89,7 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = true;
         let top_tier = CooperativeGame::get_involved_nodes(&fbas, qi_check);
-        let actual = rank_nodes(&fbas, RankingAlg::ExactPowerIndex(Some(top_tier)), false);
+        let actual = rank_nodes(&fbas, RankingAlg::PowerIndexEnum(Some(top_tier)), false);
         let expected = vec![0.333, 0.333, 0.333];
         for i in 0..expected.len() {
             assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);
