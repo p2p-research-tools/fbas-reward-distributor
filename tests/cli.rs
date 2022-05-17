@@ -6,7 +6,7 @@ fn rank_only_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("rank")
         .arg("test_data/trivial.json")
-        .arg("exact-power-index");
+        .arg("power-index-enum");
     cmd.assert().success().stdout(predicate::str::contains(
         "List of Rankings as (NodeId, PK, Score):",
     ));
@@ -42,7 +42,7 @@ fn approx_command_without_samples() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("reward_distributor")?;
     cmd.arg("distribute")
         .arg("test_data/trivial.json")
-        .arg("approx-power-index");
+        .arg("power-index-approx");
     cmd.assert().failure().stderr(predicate::str::contains(
         "required arguments were not provided",
     ));
