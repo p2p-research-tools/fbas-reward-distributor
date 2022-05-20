@@ -1,5 +1,10 @@
 # FBAS Reward Distributor
 
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+[![CI](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml/badge.svg)](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/cndolo/fbas-reward-distributor/branch/master/graph/badge.svg?token=SADRQEH8DT)](https://codecov.io/gh/cndolo/fbas-reward-distributor)
+[![dependency status](https://deps.rs/repo/github/cndolo/fbas-reward-distributor/status.svg)](https://deps.rs/repo/github/cndolo/fbas-reward-distributor)
+
 Framework for the computation of a node's influence and reward distribution in
 a Federated Byzantine Agreement Systems (FBASs) like
 [Stellar](https://www.stellar.org/).
