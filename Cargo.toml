@@ -33,7 +33,7 @@ batch = ["par-map", "log", "env_logger", "lazy_static"]
 measurements = ["cli", "batch"]
 
 [dependencies]
-fbas_analyzer = { path = "../fbas_analyzer", default-features = false, features = ["qsc-simulation"]}
+fbas_analyzer = { version = "0.7", default-features = false, features = ["qsc-simulation"]}
 hex = "0.4.3"
 structopt = {version = "0.3.26", optional = true}
 sha3 = "0.10.0"
