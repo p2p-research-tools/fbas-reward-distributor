@@ -69,7 +69,7 @@ cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-ind
 
 ```
 [dependencies]
-fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", tag = "0.1", default-features = true}
+fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", tag = "v0.1.0", default-features = true}
 ```
 
 See the [fbas-graph-generator](https://github.com/cndolo/fbas-graph-generator) for some examples.
