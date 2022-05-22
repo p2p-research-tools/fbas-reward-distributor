@@ -2,7 +2,7 @@
 
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 [![CI](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml/badge.svg)](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/cndolo/fbas-reward-distributor/branch/master/graph/badge.svg?token=SADRQEH8DT)](https://codecov.io/gh/cndolo/fbas-reward-distributor)
+[![codecov](https://codecov.io/gh/cndolo/fbas-reward-distributor/branch/main/graph/badge.svg?token=QZH345MHCJ)](https://codecov.io/gh/cndolo/fbas-reward-distributor)
 [![dependency status](https://deps.rs/repo/github/cndolo/fbas-reward-distributor/status.svg)](https://deps.rs/repo/github/cndolo/fbas-reward-distributor)
 
 Framework for the computation of a node's influence and reward distribution in
@@ -69,10 +69,10 @@ cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-ind
 
 ```
 [dependencies]
-fbas-reward-distributor = { version = "0.1", default-features = true }
+fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", tag = "0.1", default-features = true}
 ```
 
-See the [fbas-graph-generator](https://gitlab.informatik.hu-berlin.de/ti/theses/student-content/ndolo-charmaine-ma/fbas-graph-generator) for some examples.
+See the [fbas-graph-generator](https://github.com/cndolo/fbas-graph-generator) for some examples.
 
 ## Performance and approximation measurements
 
