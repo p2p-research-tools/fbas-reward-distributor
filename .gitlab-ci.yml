@@ -26,7 +26,7 @@ unit_tests:
   stage: test
   script:
     - echo "Running unit tests"
-    - cargo rest --release
+    - cargo test --release
 
 pretty:
   stage: fmt
