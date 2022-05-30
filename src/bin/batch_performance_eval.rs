@@ -139,249 +139,152 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> PerfData
             );
             output
         }
-        Task::Analyze(input) => rank(input, fbas_type, qi_check),
+        Task::Analyze(input) => batch_rank(input, fbas_type, qi_check),
         _ => panic!("Unexpected data point"),
     }
 }
 
-fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataPoint {
+fn rank_fbas(input: InputDataPoint, fbas: &Fbas, alg: RankingAlg, qi_check: bool) -> f64 {
+    let size = fbas.number_of_nodes();
+    info!(
+        "Starting {:?} run {} for FBAS of size {}.",
+        alg, input.run, size
+    );
+    let (_, duration) = timed_secs!(rank_nodes(fbas, alg.clone(), qi_check));
+    debug!(
+        "Completed {:?} run {} for FBAS of size {}.",
+        alg, input.run, size
+    );
+    duration
+}
+
+fn batch_rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
-    info!(
-        "Starting NodeRank run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_noderank) = timed_secs!(rank_nodes(&fbas, RankingAlg::NodeRank, qi_check));
-    debug!(
-        "Completed NodeRank run {} for FBAS of size {}.",
-        input.run, size
-    );
-    info!(
-        "Starting power index run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_exact_power_index) = timed_secs!(rank_nodes(
+    let duration_noderank = rank_fbas(input.clone(), &fbas, RankingAlg::NodeRank, qi_check);
+    let duration_exact_power_index = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexEnum(None),
-        qi_check
-    ));
-    debug!(
-        "Completed power index run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    info!(
-        "Starting 10^1 approximation run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_1 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(1), None),
-        qi_check
-    ));
-    info!("Completed 10^1 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^2 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_2) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_2 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(2), None),
-        qi_check
-    ));
-    info!("Completed 10^2 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^3 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_3) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_3 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(3), None),
-        qi_check
-    ));
-    info!("Completed 10^3 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^4 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_4) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_4 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(4), None),
-        qi_check
-    ));
-    info!("Completed 10^4 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^5 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_5) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_5 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(5), None),
-        qi_check
-    ));
-    info!("Completed 10^5 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^6 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_6) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_6 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(6), None),
-        qi_check
-    ));
-    info!("Completed 10^6 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^7 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_7) = timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_7 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(7), None),
-        qi_check
-    ));
-    info!("Completed 10^7 approximation for FBAS of size {}.", size);
-    info!(
-        "Starting 10^8 approximation run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
-        timed_secs!(rank_nodes(
+    let duration_approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
+        rank_fbas(
+            input.clone(),
             &fbas,
             RankingAlg::PowerIndexApprox(10usize.pow(8), None),
-            qi_check
-        ))
+            qi_check,
+        )
     } else {
-        (Vec::default(), f64::NAN)
+        f64::NAN
     };
-    debug!("Completed 10^8 approximation for FBAS of size {}.", size);
-    debug!(
-        "Completed Approximation with TT computation run {} for FBAS of size {}.",
-        input.run, size
-    );
     let top_tier_nodes: Vec<NodeId> =
         fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
             .iter()
             .collect();
 
-    info!(
-        "Starting power index w/o TT run {} for FBAS of size {}",
-        input.run, size
-    );
-    let (_, duration_after_mq_exact_power_index) = timed_secs!(rank_nodes(
+    let duration_after_mq_exact_power_index = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexEnum(Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed power index w/o TT run {} for FBAS of size {}.",
-        input.run, size
+        qi_check,
     );
-    let (_, duration_after_mq_approx_power_indices_10_pow_1) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_1 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(1), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^1 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^2 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_2) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_2 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(2), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^2 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^3 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_3) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_3 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(3), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^3 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^4 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_4) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_4 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(4), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^4 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^5 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_5) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_5 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(5), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^5 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^6 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_6) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_6 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(6), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^6 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^7 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_7) = timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_7 = rank_fbas(
+        input.clone(),
         &fbas,
         RankingAlg::PowerIndexApprox(10usize.pow(7), Some(top_tier_nodes.clone())),
-        qi_check
-    ));
-    info!(
-        "Completed 10^7 approximation w/o TT for FBAS of size {}.",
-        size
+        qi_check,
     );
-    info!(
-        "Starting 10^8 approximation w/o TT run {} for FBAS of size {}.",
-        input.run, size
-    );
-    let (_, duration_after_mq_approx_power_indices_10_pow_8) = if input.top_tier_size <= 23 {
-        timed_secs!(rank_nodes(
+    let duration_after_mq_approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
+        rank_fbas(
+            input.clone(),
             &fbas,
             RankingAlg::PowerIndexApprox(10usize.pow(8), Some(top_tier_nodes)),
-            qi_check
-        ))
+            qi_check,
+        )
     } else {
-        (Vec::default(), f64::NAN)
+        f64::NAN
     };
-    info!(
-        "Completed 10^8 approximation with precomputed top tier for FBAS of size {}.",
-        size
-    );
-    info!("Completed run {} for FBAS with {} nodes.", input.run, size);
     PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
