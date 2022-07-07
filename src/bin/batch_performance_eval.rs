@@ -2,7 +2,7 @@ use fbas_analyzer::*;
 use fbas_reward_distributor::*;
 
 use env_logger::Env;
-use log::{debug, info};
+use log::{debug, info, warn};
 use par_map::ParMap;
 use std::{collections::BTreeMap, error::Error, io, path::PathBuf};
 use structopt::StructOpt;
@@ -24,8 +24,9 @@ struct Cli {
     #[structopt(short = "m", long = "max-top-tier-size")]
     max_top_tier_size: usize,
 
-    #[structopt(subcommand)]
-    fbas_type: FbasType,
+    // necessary to nest because two subcommands are not allowed
+    #[structopt(flatten)]
+    run_config: RunConfig,
 
     /// Update output file with missing results (doesn't repeat analyses for existing lines).
     #[structopt(short = "u", long = "update")]
@@ -45,13 +46,38 @@ struct Cli {
     dont_check_for_qi: bool,
 }
 
+#[derive(Debug, StructOpt)]
+// weird workaround because two subcommands are not allowed
+struct RunConfig {
+    #[structopt(subcommand)]
+    ranking_alg: RankingAlgConfig,
+    fbas_type: FbasType,
+}
+
+#[derive(Debug, StructOpt)]
+enum RankingAlgConfig {
+    /// Use NodeRank, an extension of PageRank, to measure nodes' weight in the FBAS
+    NodeRank,
+    /// Use Shapley-Shubik power indices to calculate nodes' importance in the FBAS. Not
+    /// recommended for FBAS with many players because of time complexity
+    PowerIndexEnum,
+    /// Approximate Shapley values as a measure of nodes' importance in the FBAS.
+    /// Number of samples to use for the approximation must be passed.
+    PowerIndexApprox { s: usize },
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::from_args();
     let env = Env::default()
         .filter_or("LOG_LEVEL", "info")
         .write_style_or("LOG_STYLE", "always");
     env_logger::init_from_env(env);
-    let fbas_type = args.fbas_type;
+    let fbas_type = args.run_config.fbas_type;
+    let ranking_alg = match args.run_config.ranking_alg {
+        RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
+        RankingAlgConfig::PowerIndexEnum => RankingAlg::PowerIndexEnum(None),
+        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s, None),
+    };
     let inputs: Vec<InputDataPoint> =
         generate_inputs(args.max_top_tier_size, args.runs, fbas_type.clone());
     let existing_outputs = if args.update {
@@ -62,7 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tasks = make_sorted_tasklist(inputs, existing_outputs);
 
     let qi_check = !args.dont_check_for_qi;
-    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
+    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check, ranking_alg);
     println!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
 
     write_csv(output_iterator, &args.output_path, args.update)?;
@@ -123,14 +149,20 @@ fn bulk_do(
     jobs: usize,
     fbas_type: FbasType,
     qi_check: bool,
+    alg: RankingAlg,
 ) -> impl Iterator<Item = PerfDataPoint> {
     tasks
         .into_iter()
         .with_nb_threads(jobs)
-        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check))
+        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check, alg.clone()))
 }
 
-fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> PerfDataPoint {
+fn analyze_or_reuse(
+    task: Task,
+    fbas_type: FbasType,
+    qi_check: bool,
+    alg: RankingAlg,
+) -> PerfDataPoint {
     match task {
         Task::ReusePerfData(output) => {
             eprintln!(
@@ -139,7 +171,7 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> PerfData
             );
             output
         }
-        Task::Analyze(input) => batch_rank(input, fbas_type, qi_check),
+        Task::Analyze(input) => batch_rank(input, fbas_type, qi_check, alg),
         _ => panic!("Unexpected data point"),
     }
 }
@@ -158,155 +190,54 @@ fn rank_fbas(input: InputDataPoint, fbas: &Fbas, alg: RankingAlg, qi_check: bool
     duration
 }
 
-fn batch_rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> PerfDataPoint {
+fn batch_rank(
+    input: InputDataPoint,
+    fbas_type: FbasType,
+    qi_check: bool,
+    alg: RankingAlg,
+) -> PerfDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
-    let duration_noderank = rank_fbas(input.clone(), &fbas, RankingAlg::NodeRank, qi_check);
-    let duration_exact_power_index = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexEnum(None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_1 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(1), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_2 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(2), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_3 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(3), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_4 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(4), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_5 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(5), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_6 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(6), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_7 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(7), None),
-        qi_check,
-    );
-    let duration_approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
-        rank_fbas(
-            input.clone(),
-            &fbas,
-            RankingAlg::PowerIndexApprox(10usize.pow(8), None),
-            qi_check,
-        )
-    } else {
-        f64::NAN
+
+    // first measurements include TT
+    let duration = match alg {
+        RankingAlg::PowerIndexApprox(100000000, _) => {
+            if input.top_tier_size <= 23 {
+                rank_fbas(input.clone(), &fbas, alg.clone(), qi_check)
+            } else {
+                f64::NAN
+            }
+        }
+        _ => rank_fbas(input.clone(), &fbas, alg.clone(), qi_check),
     };
+
     let top_tier_nodes: Vec<NodeId> =
         fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
             .iter()
             .collect();
 
-    let duration_after_mq_exact_power_index = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexEnum(Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_1 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(1), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_2 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(2), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_3 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(3), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_4 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(4), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_5 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(5), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_6 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(6), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_7 = rank_fbas(
-        input.clone(),
-        &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(7), Some(top_tier_nodes.clone())),
-        qi_check,
-    );
-    let duration_after_mq_approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
-        rank_fbas(
-            input.clone(),
-            &fbas,
-            RankingAlg::PowerIndexApprox(10usize.pow(8), Some(top_tier_nodes)),
-            qi_check,
-        )
+    let duration_after_mq = if alg != RankingAlg::NodeRank {
+        let alg_with_tt = match alg {
+            RankingAlg::PowerIndexEnum(_) => RankingAlg::PowerIndexEnum(Some(top_tier_nodes)),
+            RankingAlg::PowerIndexApprox(samples, _) => {
+                RankingAlg::PowerIndexApprox(samples, Some(top_tier_nodes))
+            }
+            _ => {
+                warn!("Encountered unexpected RankingAlg.");
+                alg
+            }
+        };
+        rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
     } else {
         f64::NAN
     };
     PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
-        duration_noderank,
-        duration_exact_power_index,
-        duration_approx_power_indices_10_pow_1,
-        duration_approx_power_indices_10_pow_2,
-        duration_approx_power_indices_10_pow_3,
-        duration_approx_power_indices_10_pow_4,
-        duration_approx_power_indices_10_pow_5,
-        duration_approx_power_indices_10_pow_6,
-        duration_approx_power_indices_10_pow_7,
-        duration_approx_power_indices_10_pow_8,
-        duration_after_mq_exact_power_index,
-        duration_after_mq_approx_power_indices_10_pow_1,
-        duration_after_mq_approx_power_indices_10_pow_2,
-        duration_after_mq_approx_power_indices_10_pow_3,
-        duration_after_mq_approx_power_indices_10_pow_4,
-        duration_after_mq_approx_power_indices_10_pow_5,
-        duration_after_mq_approx_power_indices_10_pow_6,
-        duration_after_mq_approx_power_indices_10_pow_7,
-        duration_after_mq_approx_power_indices_10_pow_8,
+        duration,
+        duration_after_mq,
     }
 }
 

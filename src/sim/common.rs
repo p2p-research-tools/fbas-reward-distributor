@@ -1,5 +1,6 @@
 use crate::{ErrorDataPoint, InputDataPoint, PerfDataPoint};
 use fbas_analyzer::*;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]
@@ -26,6 +27,18 @@ impl FbasType {
             FbasType::MobileCoin => make_almost_ideal_fbas(top_tier_size),
             FbasType::Stellar => make_almost_ideal_stellarlike_fbas(top_tier_size),
             FbasType::NonSymmetric => make_non_symmetric_fbas(top_tier_size),
+        }
+    }
+}
+
+impl FromStr for FbasType {
+    type Err = &'static str;
+    fn from_str(fbas_type: &str) -> Result<Self, Self::Err> {
+        match fbas_type.to_lowercase().as_ref() {
+            "mobilecoin" => Ok(FbasType::MobileCoin),
+            "stellar" => Ok(FbasType::Stellar),
+            "nonsymmetric" => Ok(FbasType::NonSymmetric),
+            _ => Err("Unknown algorithm"),
         }
     }
 }
