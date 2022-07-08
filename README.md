@@ -81,10 +81,10 @@ See the [fbas-graph-generator](https://github.com/cndolo/fbas-graph-generator) f
 ```
 cargo build --release --features "measurements"
 ```
-2. then run performance measurements
+2. then run performance measurements using the selected ranking algorithm
 
 ```
-target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
+target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE $RANKING_ALGO
 ```
 3. and/or approximation measurements
 

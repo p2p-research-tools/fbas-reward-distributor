@@ -213,12 +213,11 @@ fn batch_rank(
         _ => rank_fbas(input.clone(), &fbas, alg.clone(), qi_check),
     };
 
-    let top_tier_nodes: Vec<NodeId> =
-        fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
-            .iter()
-            .collect();
-
     let duration_after_mq = if alg != RankingAlg::NodeRank {
+        let top_tier_nodes: Vec<NodeId> =
+            fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
+                .iter()
+                .collect();
         let alg_with_tt = match alg {
             RankingAlg::PowerIndexEnum(_) => RankingAlg::PowerIndexEnum(Some(top_tier_nodes)),
             RankingAlg::PowerIndexApprox(samples, _) => {
