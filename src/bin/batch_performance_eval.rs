@@ -204,6 +204,7 @@ fn batch_rank(
     // first measurements include TT
     let duration = match alg {
         RankingAlg::PowerIndexApprox(100000000, _) => {
+            // measurements with 10^8 take very long so we stop here
             if input.top_tier_size <= 23 {
                 rank_fbas(input.clone(), &fbas, alg.clone(), qi_check)
             } else {
@@ -219,16 +220,28 @@ fn batch_rank(
                 .iter()
                 .collect();
         let alg_with_tt = match alg {
-            RankingAlg::PowerIndexEnum(_) => RankingAlg::PowerIndexEnum(Some(top_tier_nodes)),
+            RankingAlg::PowerIndexEnum(_) => {
+                RankingAlg::PowerIndexEnum(Some(top_tier_nodes.clone()))
+            }
             RankingAlg::PowerIndexApprox(samples, _) => {
-                RankingAlg::PowerIndexApprox(samples, Some(top_tier_nodes))
+                RankingAlg::PowerIndexApprox(samples, Some(top_tier_nodes.clone()))
             }
             _ => {
                 warn!("Encountered unexpected RankingAlg.");
                 alg
             }
         };
-        rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
+
+        // measurements with 10^8 take very long so we stop here
+        if alg_with_tt == RankingAlg::PowerIndexApprox(100000000, Some(top_tier_nodes)) {
+            if input.top_tier_size <= 23 {
+                rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
+            } else {
+                f64::NAN
+            }
+        } else {
+            rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
+        }
     } else {
         f64::NAN
     };
