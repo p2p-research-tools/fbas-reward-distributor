@@ -14,15 +14,14 @@ impl<'a> CooperativeGame<'a> {
         num_samples: usize,
         qi_check: bool,
     ) -> Vec<Score> {
-        // Because the TT is computed out of this function, we assume the check for     QI has
-        // already been done if we got this far
-        let top_tier = if let Some(tt) = self.top_tier.clone() {
-            println!("Game already initialised with involved nodes..");
-            tt
-        } else {
-            Self::get_involved_nodes(self.fbas, qi_check)
-        };
-        let sample_permutations = generate_sample_permutations(num_samples, &top_tier);
+        if qi_check {
+            println!("Ensuring the FBAS has quorum intersection.");
+            assert!(
+                fbas_analyzer::all_intersect(&fbas_analyzer::find_minimal_quorums(self.fbas)),
+                "FBAS lacks quorum intersection!"
+            );
+        }
+        let sample_permutations = generate_sample_permutations(num_samples, &self.players);
         let power_indices: Vec<Score> = self
             .players
             .iter()
@@ -88,9 +87,9 @@ fn compute_player_i_marginal_contribution(player: usize, pred: &[usize], fbas: &
 /// Bitset wont work here because of order
 fn generate_sample_permutations(
     no_samples: usize,
-    top_tier: &[NodeId],
+    players: &[NodeId],
 ) -> (impl IntoIterator<Item = Vec<NodeId>> + Clone) {
-    let mut grand_coalition: Vec<usize> = top_tier.into();
+    let mut grand_coalition: Vec<usize> = players.into();
     // Complexity 0(n) per shuffle
     (0..no_samples)
         .collect::<Vec<_>>()
@@ -109,9 +108,9 @@ mod tests {
     use std::path::Path;
 
     #[test]
-    fn generate_correct_samples() {
-        let tt = vec![];
-        let actual = generate_sample_permutations(6, &tt);
+    fn generate_correct_num_of_samples() {
+        let players = vec![]; // empty vec because we are just checking for the len
+        let actual = generate_sample_permutations(6, &players);
         assert_eq!(actual.into_iter().size_hint(), (6, Some(6)));
     }
 

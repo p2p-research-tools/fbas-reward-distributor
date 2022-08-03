@@ -2,7 +2,7 @@ use fbas_analyzer::*;
 use fbas_reward_distributor::*;
 
 use env_logger::Env;
-use log::{debug, info, warn};
+use log::{debug, info};
 use par_map::ParMap;
 use std::{collections::BTreeMap, error::Error, io, path::PathBuf};
 use structopt::StructOpt;
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ranking_alg = match args.run_config.ranking_alg {
         RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
         RankingAlgConfig::PowerIndexEnum => RankingAlg::PowerIndexEnum(None),
-        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s, None),
+        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s),
     };
     let inputs: Vec<InputDataPoint> =
         generate_inputs(args.max_top_tier_size, args.runs, fbas_type.clone());
@@ -201,9 +201,9 @@ fn batch_rank(
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
 
-    // first measurements include TT
+    // first measurements include TT computation for enumeration
     let duration = match alg {
-        RankingAlg::PowerIndexApprox(100000000, _) => {
+        RankingAlg::PowerIndexApprox(100000000) => {
             // measurements with 10^8 take very long so we stop here
             if input.top_tier_size <= 23 {
                 rank_fbas(input.clone(), &fbas, alg.clone(), qi_check)
@@ -214,37 +214,15 @@ fn batch_rank(
         _ => rank_fbas(input.clone(), &fbas, alg.clone(), qi_check),
     };
 
-    let duration_after_mq = if alg != RankingAlg::NodeRank {
-        let top_tier_nodes: Vec<NodeId> =
-            fbas_analyzer::involved_nodes(&fbas_analyzer::find_minimal_quorums(&fbas))
-                .iter()
-                .collect();
-        let alg_with_tt = match alg {
-            RankingAlg::PowerIndexEnum(_) => {
-                RankingAlg::PowerIndexEnum(Some(top_tier_nodes.clone()))
-            }
-            RankingAlg::PowerIndexApprox(samples, _) => {
-                RankingAlg::PowerIndexApprox(samples, Some(top_tier_nodes.clone()))
-            }
-            _ => {
-                warn!("Encountered unexpected RankingAlg.");
-                alg
-            }
-        };
-
-        // measurements with 10^8 take very long so we stop here
-        if alg_with_tt == RankingAlg::PowerIndexApprox(100000000, Some(top_tier_nodes)) {
-            if input.top_tier_size <= 23 {
-                rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
-            } else {
-                f64::NAN
-            }
-        } else {
-            rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
-        }
+    // only != f64::nan for PI enumeration
+    let duration_after_mq = if alg == RankingAlg::PowerIndexEnum(None) {
+        let top_tier_nodes: Vec<NodeId> = fbas.all_nodes().iter().collect();
+        let alg_with_tt = RankingAlg::PowerIndexEnum(Some(top_tier_nodes));
+        rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
     } else {
         f64::NAN
     };
+
     PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,

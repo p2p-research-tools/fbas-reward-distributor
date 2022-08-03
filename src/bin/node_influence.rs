@@ -96,10 +96,7 @@ enum RankingAlgConfig {
     /// samples to use must be passed if selected.
     /// The computation of minimal quorums can optionally be done before we start approximation.
     /// Useful, e.g. for timing measurements.
-    PowerIndexApprox {
-        s: usize,
-        exclude_tt_comp: Option<bool>,
-    },
+    PowerIndexApprox { s: usize },
 }
 
 fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
@@ -112,16 +109,11 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
                 RankingAlg::PowerIndexEnum(None)
             }
         }
-        RankingAlgConfig::PowerIndexApprox { s, exclude_tt_comp } => {
-            if let Some(true) = exclude_tt_comp {
-                RankingAlg::PowerIndexApprox(s, Some(Vec::default()))
-            } else {
-                RankingAlg::PowerIndexApprox(s, None)
-            }
-        }
+        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s),
     }
 }
 
+#[allow(dead_code)]
 fn get_top_tier_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
     let min_qs = fbas_analyzer::find_minimal_quorums(fbas);
     if qi_check {
@@ -147,17 +139,7 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
-            let mut alg = get_ranking_alg_from_params(alg_cfg);
-            // need to get TT if its computation should be excluded from approximation
-            alg = if let RankingAlg::PowerIndexApprox(s, tt) = alg.clone() {
-                if tt.is_some() {
-                    RankingAlg::PowerIndexApprox(s, Some(get_top_tier_nodes(&fbas, qi_check)))
-                } else {
-                    alg.clone()
-                }
-            } else {
-                alg
-            };
+            let alg = get_ranking_alg_from_params(alg_cfg);
             let rankings = compute_influence(&node_ids, &fbas, alg, use_pks, qi_check);
             println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
         }
@@ -169,17 +151,7 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
-            let mut alg = get_ranking_alg_from_params(alg_cfg);
-            // need to get TT if its computation should be excluded from approximation
-            alg = if let RankingAlg::PowerIndexApprox(s, tt) = alg.clone() {
-                if tt.is_some() {
-                    RankingAlg::PowerIndexApprox(s, Some(get_top_tier_nodes(&fbas, qi_check)))
-                } else {
-                    alg.clone()
-                }
-            } else {
-                alg
-            };
+            let alg = get_ranking_alg_from_params(alg_cfg);
             let allocation =
                 distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks, qi_check);
             println!(
@@ -241,8 +213,8 @@ fn distribute_rewards(
         RankingAlg::PowerIndexEnum(tt) => {
             exact_game_theory_distribution(fbas, reward_value, tt, qi_check)
         }
-        RankingAlg::PowerIndexApprox(samples, tt) => {
-            approx_game_theory_distribution(samples, fbas, reward_value, tt, qi_check)
+        RankingAlg::PowerIndexApprox(samples) => {
+            approx_game_theory_distribution(samples, fbas, reward_value, qi_check)
         }
     };
     create_reward_report(allocation, fbas, use_pks)

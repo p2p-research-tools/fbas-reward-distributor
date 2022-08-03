@@ -190,7 +190,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_1 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(1), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(1)),
         qi_check,
     );
     let (mean_abs_error_10_pow_1, median_abs_error_10_pow_1, mean_abs_percentage_error_10_pow_1) =
@@ -202,7 +202,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_2 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(2), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(2)),
         qi_check,
     );
     let (mean_abs_error_10_pow_2, median_abs_error_10_pow_2, mean_abs_percentage_error_10_pow_2) =
@@ -214,7 +214,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_3 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(3), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(3)),
         qi_check,
     );
     let (mean_abs_error_10_pow_3, median_abs_error_10_pow_3, mean_abs_percentage_error_10_pow_3) =
@@ -226,7 +226,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_4 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(4), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(4)),
         qi_check,
     );
     let (mean_abs_error_10_pow_4, median_abs_error_10_pow_4, mean_abs_percentage_error_10_pow_4) =
@@ -238,7 +238,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_5 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(5), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(5)),
         qi_check,
     );
     let (mean_abs_error_10_pow_5, median_abs_error_10_pow_5, mean_abs_percentage_error_10_pow_5) =
@@ -250,7 +250,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_6 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(6), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(6)),
         qi_check,
     );
     let (mean_abs_error_10_pow_6, median_abs_error_10_pow_6, mean_abs_percentage_error_10_pow_6) =
@@ -262,7 +262,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_7 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(7), None),
+        RankingAlg::PowerIndexApprox(10usize.pow(7)),
         qi_check,
     );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
@@ -275,7 +275,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     let approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
         rank_nodes(
             &fbas,
-            RankingAlg::PowerIndexApprox(10usize.pow(8), None),
+            RankingAlg::PowerIndexApprox(10usize.pow(8)),
             qi_check,
         )
     } else {
