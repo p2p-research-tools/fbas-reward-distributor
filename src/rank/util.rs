@@ -1,5 +1,3 @@
-use crate::*;
-
 use fbas_analyzer::*;
 use rug::Integer;
 use sha3::{Digest, Sha3_256};
@@ -137,26 +135,6 @@ pub(crate) fn get_list_of_creators_for_quorum_set(
         HashSet::default()
     };
     creators
-}
-
-/// Implementation of the SSPI for one coalition
-/// coalition: BitSet of player IDs
-/// num_players: Total number of players in the game
-/// fact_total: Factorial of total number of players in the game
-pub(crate) fn ss_probability_for_one_coalition(
-    coalition: &Coalition,
-    num_players: usize,
-    fact_total: Integer,
-) -> Score {
-    let set_size = CooperativeGame::coalitions_cardinatily(coalition);
-    let set_size_minus_one_factorial = n_factorial(set_size - 1);
-    let n_minus_set_size_factorial = n_factorial(num_players - set_size);
-    let dividend = set_size_minus_one_factorial * n_minus_set_size_factorial;
-    let gcd = dividend.clone().gcd(&fact_total);
-    let numerator = dividend / gcd.clone();
-    let denominator = fact_total / gcd;
-    // It's now safe to return to a primitive data type under the assumption that num/gcd <  denom/gcd and fits in 64 bits
-    numerator.to_f64() / denominator.to_f64()
 }
 
 pub(crate) fn n_factorial(n: usize) -> Integer {
@@ -299,16 +277,6 @@ mod tests {
             let actual = n_factorial(*n);
             assert_eq!(expected[i], actual);
         }
-    }
-    #[test]
-    // Example from thesis
-    fn power_index_for_one_set() {
-        let coalition = bitset![0, 1];
-        let num_players = 3;
-        let total_factorial = Integer::from(6);
-        let actual = ss_probability_for_one_coalition(&coalition, num_players, total_factorial);
-        let expected = 1.0 / 6.0;
-        assert_eq!(expected, actual);
     }
     #[test]
     fn round() {

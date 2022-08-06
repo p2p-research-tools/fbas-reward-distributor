@@ -30,7 +30,7 @@ impl<'a> CooperativeGame<'a> {
             .players
             .iter()
             .map(|&p| {
-                Self::compute_player_power_index(
+                Self::computer_power_index_for_player(
                     players_critical_coalitions.get(&p),
                     num_players,
                     total_factorial.clone(),
@@ -43,7 +43,7 @@ impl<'a> CooperativeGame<'a> {
     /// winning_coalitions: a player's winning coalitions used to find their power index
     /// num_players: number of players in the top tier
     /// total_factorial: The factorial of num_players
-    fn compute_player_power_index(
+    fn computer_power_index_for_player(
         winning_coalitions: Option<&Vec<Coalition>>,
         num_players: usize,
         total_factorial: Integer,
@@ -52,9 +52,7 @@ impl<'a> CooperativeGame<'a> {
             round_to_three_places(
                 critical_coalitions
                     .iter()
-                    .map(|w| {
-                        ss_probability_for_one_coalition(w, num_players, total_factorial.clone())
-                    })
+                    .map(|w| value_added_to_one_coalition(w, num_players, total_factorial.clone()))
                     .sum(),
             )
         } else {
@@ -100,6 +98,25 @@ impl<'a> CooperativeGame<'a> {
     }
 }
 
+/// Implementation of the SSPI for one coalition
+/// coalition: BitSet of player IDs
+/// num_players: Total number of players in the game
+/// fact_total: Factorial of total number of players in the game
+pub(crate) fn value_added_to_one_coalition(
+    coalition: &Coalition,
+    num_players: usize,
+    fact_total: Integer,
+) -> Score {
+    let set_size = CooperativeGame::coalitions_cardinatily(coalition);
+    let set_size_minus_one_factorial = n_factorial(set_size - 1);
+    let n_minus_set_size_factorial = n_factorial(num_players - set_size);
+    let dividend = set_size_minus_one_factorial * n_minus_set_size_factorial;
+    let gcd = dividend.clone().gcd(&fact_total);
+    let numerator = dividend / gcd.clone();
+    let denominator = fact_total / gcd;
+    // It's now safe to return to a primitive data type under the assumption that num/gcd <  denom/gcd and fits in 64 bits
+    numerator.to_f64() / denominator.to_f64()
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,6 +144,16 @@ mod tests {
         assert_eq!(expected, actual);
     }
     #[test]
+    // Example from thesis
+    fn power_index_for_one_set() {
+        let coalition = bitset![0, 1];
+        let num_players = 3;
+        let total_factorial = Integer::from(6);
+        let actual = value_added_to_one_coalition(&coalition, num_players, total_factorial);
+        let expected = 1.0 / 6.0;
+        assert_eq!(expected, actual);
+    }
+    #[test]
     fn critical_sets_for_player() {
         let winning = HashSet::from([
             bitset![0, 1],
@@ -148,8 +175,11 @@ mod tests {
         let num_players = 3;
         let factorial = Integer::from(6);
         let expected = 1.0 / 3.0;
-        let actual =
-            CooperativeGame::compute_player_power_index(Some(&winning), num_players, factorial);
+        let actual = CooperativeGame::computer_power_index_for_player(
+            Some(&winning),
+            num_players,
+            factorial,
+        );
         assert_eq!(round_to_three_places(expected), actual);
     }
 
