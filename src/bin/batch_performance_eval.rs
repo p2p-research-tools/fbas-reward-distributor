@@ -202,17 +202,7 @@ fn batch_rank(
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
 
     // first measurements include TT computation for enumeration
-    let duration = match alg {
-        RankingAlg::PowerIndexApprox(100000000) => {
-            // measurements with 10^8 take very long so we stop here
-            if input.top_tier_size <= 23 {
-                rank_fbas(input.clone(), &fbas, alg.clone(), qi_check)
-            } else {
-                f64::NAN
-            }
-        }
-        _ => rank_fbas(input.clone(), &fbas, alg.clone(), qi_check),
-    };
+    let duration = rank_fbas(input.clone(), &fbas, alg.clone(), qi_check);
 
     // only != f64::nan for PI enumeration
     let duration_after_mq = if alg == RankingAlg::PowerIndexEnum(None) {

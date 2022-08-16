@@ -78,7 +78,6 @@ impl<'a> CooperativeGame<'a> {
     /// 'status' when the player is removed from the set
     /// Alg: Iterate all winning coalitions w and check player is in w
     /// Yes: Remove player. If w is no a longer a quorum, then player is critical
-    /// TODO: Maybe parallel as an optimisation?
     pub(crate) fn player_is_critical(
         player: usize,
         winning_coalitions: &HashSet<Coalition>,

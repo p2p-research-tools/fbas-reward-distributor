@@ -44,32 +44,39 @@ cargo run --release -- {distribute | rank} [-i -p -r reward] <fbas-path> {node-r
     - i: Ignore inactive nodes in the FBAS. Optional. Default = false.
     - r reward: reward value that is to be distributed - only used with the rank subcommand. Default = 1.
     - p: Include the nodes' public keys in the output. Default = false.
+```
 
-The rank subcommand is similar to distribute only with the exception that it only calculates the nodes' weights without allocating rewards.
+The rank subcommand is similar to distribute with the exception that it only calculates the nodes' weights without allocating rewards.
 The output is always a sorted list of tuples: (NodeID, Public Key (where available), Ranking, [Reward]).
 
-```
-2. Compute how 10 units should be distributed among the nodes in the `mobilecoin_nodes_2021-10-22.json` using a graph-theoretic (Noderank) metric.
-```
-cargo run --release -- distribute -r 10 test_data/mobilecoin_nodes_2021-10-22.json node-rank
-```
-or using the Shapley-Shubik power index
-```
-cargo run --release -- distribute -r 10 test_data/mobilecoin_nodes_2021-10-22.json power-index-enum
-```
-This algorithm computes the players' Shapley-Shubik indices via enumeration in `O(2^n)` time, and is therefore not recommended for larger FBASs.
+2. Compute a reward distribution for the nodes in the `mobilecoin_nodes_2021-10-22.json` FBAS using
 
-As an alternative, we provide an polynomial time approximation implementation using [Castro et al.'s algorithm](https://www.sciencedirect.com/science/article/abs/pii/S0305054808000804) based on sampling. 
-3. Rank the nodes using the approximation algorithm and use 1000 samples for the approximation
-```
-cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-index-approx 1000
-```
+    1. the Shapley-Shubik power index
+
+        ```
+            cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-index-enum
+        ```
+
+        This algorithm computes the players' Shapley-Shubik indices via enumeration in `O(2^n)` time, and is therefore not recommended for larger FBASs.
+
+    2. As an alternative, we provide a polynomial time approximation algorithm using [Castro et al.'s algorithm](https://www.sciencedirect.com/science/article/abs/pii/S0305054808000804) based on sampling.
+
+        ```
+        cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json power-index-approx 1000
+        ```
+
+    3. Distributions can also be computed based on a graph-theoretic (NodeRank) metric:
+
+        ```
+        cargo run --release -- rank test_data/mobilecoin_nodes_2021-10-22.json node-rank
+
+        ```
 
 ## Usage as a library
 
 ```
 [dependencies]
-fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", tag = "v0.1.0", default-features = true}
+fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", default-features = true}
 ```
 
 See the [fbas-graph-generator](https://github.com/cndolo/fbas-graph-generator) for some examples.
