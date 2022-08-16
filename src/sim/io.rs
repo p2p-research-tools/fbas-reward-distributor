@@ -103,3 +103,30 @@ pub fn write_csv_via_writer(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn read_from_nonexistent_file_doesnt_panic() {
+        let file_path = Path::new("");
+        let actual = read_csv_from_file(file_path);
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn write_to_nonexistent_file_doesnt_panic() {
+        let file_path = Path::new("");
+        let mock_data = PerfDataPoint {
+            top_tier_size: usize::default(),
+            run: usize::default(),
+            duration: f64::default(),
+            duration_after_mq: f64::default(),
+        };
+
+        let actual = write_csv_to_file(vec![mock_data], file_path);
+        assert!(actual.is_err());
+    }
+}

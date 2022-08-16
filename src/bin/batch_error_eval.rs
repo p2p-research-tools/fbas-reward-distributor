@@ -272,21 +272,13 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
         "Starting 10^8 approximation run {} for FBAS of size {}.",
         input.run, size
     );
-    let approx_power_indices_10_pow_8 = if input.top_tier_size <= 23 {
-        rank_nodes(
-            &fbas,
-            RankingAlg::PowerIndexApprox(10usize.pow(8)),
-            qi_check,
-        )
-    } else {
-        Vec::default()
-    };
+    let approx_power_indices_10_pow_8 = rank_nodes(
+        &fbas,
+        RankingAlg::PowerIndexApprox(10usize.pow(8)),
+        qi_check,
+    );
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =
-        if input.top_tier_size <= 23 {
-            mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index)
-        } else {
-            (f64::NAN, f64::NAN, f64::NAN)
-        };
+        mean_med_pctg_errors(&approx_power_indices_10_pow_8, &exact_power_index);
     info!(
         "Completed 10^8 Approximation run {} for FBAS of size {}.",
         input.run, size

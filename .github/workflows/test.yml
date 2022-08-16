@@ -37,4 +37,4 @@ jobs:
         name: 🔎 Run unit tests
         with:
           command: test
-          args: --release
+          args: --release --features measurements
