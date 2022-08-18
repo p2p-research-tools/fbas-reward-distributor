@@ -89,31 +89,24 @@ enum RankingAlgConfig {
     NodeRank,
     /// Use Shapley-Shubik power indices to calculate nodes' importance in the FBAS. Not
     /// recommended for FBAS with many players because of time complexity
-    /// The computation of minimal quorums can optionally be done before we start approximation.
-    /// Useful, e.g. for timing measurements.
-    PowerIndexEnum { exclude_tt_comp: Option<bool> },
+    PowerIndexEnum,
     /// Approximate Shapley values as a measure of nodes' importance in the FBAS. The number of
     /// samples to use must be passed if selected.
-    /// The computation of minimal quorums can optionally be done before we start approximation.
-    /// Useful, e.g. for timing measurements.
     PowerIndexApprox { s: usize },
 }
 
 fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
     match cfg {
         RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
-        RankingAlgConfig::PowerIndexEnum { exclude_tt_comp } => {
-            if let Some(true) = exclude_tt_comp {
-                RankingAlg::PowerIndexEnum(Some(Vec::default()))
-            } else {
-                RankingAlg::PowerIndexEnum(None)
-            }
+        RankingAlgConfig::PowerIndexEnum =>
+        // top tier is computed in the next step
+        {
+            RankingAlg::PowerIndexEnum(None)
         }
         RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s),
     }
 }
 
-#[allow(dead_code)]
 fn get_top_tier_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
     let min_qs = fbas_analyzer::find_minimal_quorums(fbas);
     if qi_check {
@@ -125,7 +118,7 @@ fn get_top_tier_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
         println!("FBAS enjoys quorum intersection!");
     }
     let involved_nodes: Vec<NodeId> = fbas_analyzer::involved_nodes(&min_qs).into_iter().collect();
-    println!("Computed top tier of size {}.", involved_nodes.len());
+    println!("Computed top tier with {} nodes.", involved_nodes.len());
     involved_nodes
 }
 
@@ -139,7 +132,13 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
-            let alg = get_ranking_alg_from_params(alg_cfg);
+            let mut alg = get_ranking_alg_from_params(alg_cfg);
+            alg = match alg {
+                RankingAlg::PowerIndexEnum(_) => {
+                    RankingAlg::PowerIndexEnum(Some(get_top_tier_nodes(&fbas, qi_check)))
+                }
+                _ => alg,
+            };
             let rankings = compute_influence(&node_ids, &fbas, alg, use_pks, qi_check);
             println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
         }
@@ -151,7 +150,13 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
-            let alg = get_ranking_alg_from_params(alg_cfg);
+            let mut alg = get_ranking_alg_from_params(alg_cfg);
+            alg = match alg {
+                RankingAlg::PowerIndexEnum(_) => {
+                    RankingAlg::PowerIndexEnum(Some(get_top_tier_nodes(&fbas, qi_check)))
+                }
+                _ => alg,
+            };
             let allocation =
                 distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks, qi_check);
             println!(

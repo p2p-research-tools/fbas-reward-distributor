@@ -21,6 +21,7 @@ impl<'a> CooperativeGame<'a> {
                 "FBAS lacks quorum intersection!"
             );
         }
+        println!("Starting calculation of power indices via approximation.");
         let sample_permutations = generate_sample_permutations(num_samples, &self.players);
         let power_indices: Vec<Score> = self
             .players
