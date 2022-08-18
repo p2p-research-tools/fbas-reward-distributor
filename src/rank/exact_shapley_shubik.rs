@@ -18,6 +18,7 @@ impl<'a> CooperativeGame<'a> {
         } else {
             Self::get_involved_nodes(self.fbas, qi_check)
         };
+        println!("Starting calculation of power indices via enumeration.");
         let num_players = top_tier.len();
         let total_factorial = n_factorial(top_tier.len());
         let winning_coalitions = self.find_winning_coalitions(&top_tier);
