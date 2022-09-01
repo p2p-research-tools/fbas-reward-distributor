@@ -1,7 +1,7 @@
 mod common;
 mod io;
-mod stats;
+mod errors;
 
 pub use common::*;
 pub use io::*;
-pub use stats::*;
+pub use errors::*;

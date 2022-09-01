@@ -1,13 +1,13 @@
 pub mod dist;
 pub mod rank;
 pub mod report;
-pub mod sim;
+pub mod stats;
 pub mod types;
 
 pub use dist::*;
 pub use rank::*;
 pub use report::*;
-pub use sim::*;
+pub use stats::*;
 pub use types::*;
 pub type Score = f64;
 pub type Reward = f64;
