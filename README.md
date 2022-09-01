@@ -93,6 +93,9 @@ cargo build --release --features "measurements"
 ```
 target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE $RANKING_ALGO
 ```
+
+The `-s` option activates monitoring of memory usage during the above measurements.
+
 3. and/or approximation measurements
 
 ```

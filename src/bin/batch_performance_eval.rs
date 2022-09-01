@@ -44,6 +44,10 @@ struct Cli {
     /// Default behaviour is to always check for QI.
     #[structopt(long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    /// Monitor system's memory usage
+    #[structopt(short = "s", long = "system")]
+    sysinfo: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -88,7 +92,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tasks = make_sorted_tasklist(inputs, existing_outputs);
 
     let qi_check = !args.dont_check_for_qi;
-    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check, ranking_alg);
+    let mem_monitor = args.sysinfo;
+    let output_iterator = bulk_do(
+        tasks,
+        args.jobs,
+        fbas_type.clone(),
+        qi_check,
+        ranking_alg,
+        mem_monitor,
+    );
     println!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
 
     write_csv(output_iterator, &args.output_path, args.update)?;
@@ -150,11 +162,14 @@ fn bulk_do(
     fbas_type: FbasType,
     qi_check: bool,
     alg: RankingAlg,
+    monitor: bool,
 ) -> impl Iterator<Item = PerfDataPoint> {
     tasks
         .into_iter()
         .with_nb_threads(jobs)
-        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check, alg.clone()))
+        .par_map(move |task| {
+            analyze_or_reuse(task, fbas_type.clone(), qi_check, alg.clone(), monitor)
+        })
 }
 
 fn analyze_or_reuse(
@@ -162,6 +177,7 @@ fn analyze_or_reuse(
     fbas_type: FbasType,
     qi_check: bool,
     alg: RankingAlg,
+    monitor: bool,
 ) -> PerfDataPoint {
     match task {
         Task::ReusePerfData(output) => {
@@ -171,23 +187,45 @@ fn analyze_or_reuse(
             );
             output
         }
-        Task::Analyze(input) => batch_rank(input, fbas_type, qi_check, alg),
+        Task::Analyze(input) => batch_rank(input, fbas_type, qi_check, alg, monitor),
         _ => panic!("Unexpected data point"),
     }
 }
 
-fn rank_fbas(input: InputDataPoint, fbas: &Fbas, alg: RankingAlg, qi_check: bool) -> f64 {
+fn rank_fbas(
+    input: InputDataPoint,
+    fbas: &Fbas,
+    alg: RankingAlg,
+    qi_check: bool,
+    monitor: bool,
+) -> (f64, SysInfo) {
     let size = fbas.number_of_nodes();
     info!(
         "Starting {:?} run {} for FBAS of size {}.",
         alg, input.run, size
     );
+    let (tot_mem, used_mem, avail_mem, free_mem, tot_swap, used_swap) = if monitor {
+        let mut system = fbas_reward_distributor::stats::init_sysinfo_instance();
+        get_system_mem_info(&mut system)
+    } else {
+        (
+            u64::default(),
+            u64::default(),
+            u64::default(),
+            u64::default(),
+            u64::default(),
+            u64::default(),
+        )
+    };
     let (_, duration) = timed_secs!(rank_nodes(fbas, alg.clone(), qi_check));
     debug!(
         "Completed {:?} run {} for FBAS of size {}.",
         alg, input.run, size
     );
-    duration
+    (
+        duration,
+        (tot_mem, used_mem, avail_mem, free_mem, tot_swap, used_swap),
+    )
 }
 
 fn batch_rank(
@@ -195,29 +233,31 @@ fn batch_rank(
     fbas_type: FbasType,
     qi_check: bool,
     alg: RankingAlg,
+    monitor: bool,
 ) -> PerfDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
 
-    // first measurements include TT computation for enumeration
-    let duration = rank_fbas(input.clone(), &fbas, alg.clone(), qi_check);
-
-    // only != f64::nan for PI enumeration
-    let duration_after_mq = if alg == RankingAlg::PowerIndexEnum(None) {
+    let (duration, mem_info) = if alg == RankingAlg::PowerIndexEnum(None) {
         let top_tier_nodes: Vec<NodeId> = fbas.all_nodes().iter().collect();
         let alg_with_tt = RankingAlg::PowerIndexEnum(Some(top_tier_nodes));
-        rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
+        rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check, monitor)
     } else {
-        f64::NAN
+        rank_fbas(input.clone(), &fbas, alg, qi_check, monitor)
     };
 
     PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
         duration,
-        duration_after_mq,
+        total_mem_in_gb: mem_info.0,
+        used_mem_in_gb: mem_info.1,
+        avail_mem_in_gb: mem_info.2,
+        free_mem_in_gb: mem_info.3,
+        total_swap_in_gb: mem_info.4,
+        free_swap_in_gb: mem_info.5,
     }
 }
 
