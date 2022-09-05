@@ -20,7 +20,8 @@ The framework is suitable for usage as both a binary and a library and can mainl
 - A working [Rust](https://www.rust-lang.org) environment
     - Install: https://www.rust-lang.org/tools/install
 
-- A minimal gcc and g++ toolchain is required by some of the dependencies.
+- A minimal gcc and g++ toolchain is required by some of the dependencies. Should be covered by the
+  `build-essential, m4` packages.
 
 ## Build and optionally run tests
 
