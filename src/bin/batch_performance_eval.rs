@@ -201,23 +201,18 @@ fn batch_rank(
     let size = fbas.number_of_nodes();
     info!("Starting run {} for FBAS with {} nodes", input.run, size);
 
-    // first measurements include TT computation for enumeration
-    let duration = rank_fbas(input.clone(), &fbas, alg.clone(), qi_check);
-
-    // only != f64::nan for PI enumeration
-    let duration_after_mq = if alg == RankingAlg::PowerIndexEnum(None) {
+    let duration = if alg == RankingAlg::PowerIndexEnum(None) {
         let top_tier_nodes: Vec<NodeId> = fbas.all_nodes().iter().collect();
         let alg_with_tt = RankingAlg::PowerIndexEnum(Some(top_tier_nodes));
         rank_fbas(input.clone(), &fbas, alg_with_tt, qi_check)
     } else {
-        f64::NAN
+        rank_fbas(input.clone(), &fbas, alg, qi_check)
     };
 
     PerfDataPoint {
         top_tier_size: input.top_tier_size,
         run: input.run,
         duration,
-        duration_after_mq,
     }
 }
 

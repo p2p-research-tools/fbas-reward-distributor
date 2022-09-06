@@ -27,7 +27,6 @@ pub struct PerfDataPoint {
     pub top_tier_size: usize,
     pub run: usize,
     pub duration: f64,
-    pub duration_after_mq: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,7 +122,6 @@ mod tests {
             top_tier_size: usize::default(),
             run: usize::default(),
             duration: f64::default(),
-            duration_after_mq: f64::default(),
         };
 
         let actual = write_csv_to_file(vec![mock_data], file_path);
