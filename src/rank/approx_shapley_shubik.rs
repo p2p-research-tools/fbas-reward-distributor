@@ -74,13 +74,10 @@ fn compute_player_i_marginal_contribution(player: usize, pred: &[usize], fbas: &
     let predecessor: BitSet = pred.iter().copied().collect();
     let mut pred_union_player = predecessor.clone();
     pred_union_player.insert(player);
-    if fbas_analyzer::contains_quorum(&pred_union_player, fbas)
-        && !fbas_analyzer::contains_quorum(&predecessor, fbas)
-    {
-        1
-    } else {
-        0
-    }
+    usize::from(
+        fbas_analyzer::contains_quorum(&pred_union_player, fbas)
+            && !fbas_analyzer::contains_quorum(&predecessor, fbas),
+    )
 }
 
 /// We create the grand coalition, and randomly select no_samples permutations of it
