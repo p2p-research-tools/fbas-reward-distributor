@@ -36,15 +36,60 @@ cargo test --release
 
 ## Usage as a binary
 
-1. Command line arguments
-```
-cargo run --release -- {distribute | rank} [-i -p -r reward] <fbas-path> {node-rank|power-index-approx|power-index-enum}
+1. Running with cargo
 
-    - fbas-path: Path to file describing the FBAS.
-        If no path is passed, the program will attempt to read from the command line.
-    - i: Ignore inactive nodes in the FBAS. Optional. Default = false.
-    - r reward: reward value that is to be distributed - only used with the rank subcommand. Default = 1.
-    - p: Include the nodes' public keys in the output. Default = false.
+```
+cargo run --release
+reward_distributor 0.1.0
+Charmaine Ndolo
+Rank nodes of an FBAS and allocate rewards to them accordingly
+
+USAGE:
+    reward_distributor <SUBCOMMAND>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    distribute    Compute a distribution based on ranking according to selected algorithm
+    help          Prints this message or the help of the given subcommand(s)
+    rank          Rank only, do not compute a distribution
+```
+
+The rank subcommand is similar to distribute with the exception that it only
+calculates the nodes' weights without allocating rewards.
+
+```
+reward_distributor-rank 0.1.0
+Charmaine Ndolo
+Rank only, do not compute a distribution
+
+USAGE:
+    reward_distributor rank [FLAGS] [nodes-path] <SUBCOMMAND>
+
+FLAGS:
+    -n, --no-quorum-intersection    Do not assert that the FBAS has quorum intersection before proceeding with further
+                                    computations. Default behaviour is to always check for QI
+    -h, --help                      Prints help information
+    -i, --ignore-inactive-nodes     Prior to any analysis, filter out all nodes marked as `"active" == false` in the
+                                    input nodes JSON (the one at `nodes_path`)
+    -p, --pretty                    Identify nodes by their public key. Default is to use node IDs corresponding to
+                                    indices in the input file
+    -V, --version                   Prints version information
+
+ARGS:
+    <nodes-path>    Path to JSON file describing the FBAS in stellarbeat.org "nodes" format. Will use STDIN if
+                    omitted
+
+SUBCOMMANDS:
+    help                  Prints this message or the help of the given subcommand(s)
+    node-rank             Use NodeRank, an extension of PageRank, to measure nodes' weight in the FBAS
+    power-index-approx    Approximate Shapley values as a measure of nodes' importance in the FBAS. The number of
+                          samples to use must be passed if selected. Optionally pass a seed that will be used by the
+                          RNG
+    power-index-enum      Use Shapley-Shubik power indices to calculate nodes' importance in the FBAS. Not
+                          recommended for FBAS with many players because of time complexity
 ```
 
 The rank subcommand is similar to distribute with the exception that it only calculates the nodes' weights without allocating rewards.

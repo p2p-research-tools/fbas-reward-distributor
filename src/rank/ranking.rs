@@ -18,11 +18,12 @@ pub fn rank_nodes(fbas: &Fbas, ranking_algo: RankingAlg, qi_check: bool) -> Vec<
                 )
             }
         }
-        RankingAlg::PowerIndexApprox(samples) => {
+        RankingAlg::PowerIndexApprox(samples, seed) => {
             CooperativeGame::compute_approx_ss_power_index_for_game(
                 &CooperativeGame::init_from_fbas(&all_nodes, fbas),
                 samples,
                 qi_check,
+                seed,
             )
         }
         RankingAlg::NodeRank => compute_node_rank_for_fbas(&all_nodes, fbas, qi_check),
@@ -55,7 +56,7 @@ mod tests {
     fn rank_nodes_with_approx_index() {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = false;
-        let actual = rank_nodes(&fbas, RankingAlg::PowerIndexApprox(100), qi_check);
+        let actual = rank_nodes(&fbas, RankingAlg::PowerIndexApprox(100, 1), qi_check);
         let expected = vec![0.333, 0.333, 0.333];
         for i in 0..expected.len() {
             assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);

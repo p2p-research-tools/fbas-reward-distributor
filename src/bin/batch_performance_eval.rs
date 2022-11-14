@@ -63,7 +63,7 @@ enum RankingAlgConfig {
     PowerIndexEnum,
     /// Approximate Shapley values as a measure of nodes' importance in the FBAS.
     /// Number of samples to use for the approximation must be passed.
-    PowerIndexApprox { s: usize },
+    PowerIndexApprox { s: usize, seed: Option<u64> },
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -76,7 +76,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ranking_alg = match args.run_config.ranking_alg {
         RankingAlgConfig::NodeRank => RankingAlg::NodeRank,
         RankingAlgConfig::PowerIndexEnum => RankingAlg::PowerIndexEnum(None),
-        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s),
+        RankingAlgConfig::PowerIndexApprox { s, seed } => {
+            RankingAlg::PowerIndexApprox(s, seed.unwrap_or_default())
+        }
     };
     let inputs: Vec<InputDataPoint> =
         generate_inputs(args.max_top_tier_size, args.runs, fbas_type.clone());

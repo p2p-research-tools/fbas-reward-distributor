@@ -22,6 +22,6 @@ pub enum RankingAlg {
     /// An extension of PageRank. See the function 'rank_nodes_using_node_rank' for more
     NodeRank,
     PowerIndexEnum(Option<Vec<NodeId>>),
-    /// Expects the number of samples to use
-    PowerIndexApprox(usize),
+    /// Expects the number of samples to use and seed for the RNG
+    PowerIndexApprox(usize, u64),
 }

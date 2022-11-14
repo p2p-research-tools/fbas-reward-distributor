@@ -57,6 +57,9 @@ struct Cli {
     /// Default behaviour is to always check for QI.
     #[structopt(long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    /// RNG seed ensuring reproducible runs
+    seed: Option<u64>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -76,7 +79,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tasks = make_sorted_tasklist(inputs, existing_outputs);
 
     let qi_check = !args.dont_check_for_qi;
-    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
+    let seed = args.seed.unwrap_or_default();
+    let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check, seed);
     println!(
         "Starting measurements for {:?} like FBAS with upto {} nodes.\n
              Performing {} iterations per FBAS.",
@@ -141,14 +145,15 @@ fn bulk_do(
     jobs: usize,
     fbas_type: FbasType,
     qi_check: bool,
+    seed: u64,
 ) -> impl Iterator<Item = ErrorDataPoint> {
     tasks
         .into_iter()
         .with_nb_threads(jobs)
-        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check))
+        .par_map(move |task| analyze_or_reuse(task, fbas_type.clone(), qi_check, seed))
 }
 
-fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
+fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool, seed: u64) -> ErrorDataPoint {
     match task {
         Task::ReuseErrorData(output) => {
             eprintln!(
@@ -157,7 +162,7 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> ErrorDat
             );
             output
         }
-        Task::Analyze(input) => rank(input, fbas_type, qi_check),
+        Task::Analyze(input) => rank(input, fbas_type, qi_check, seed),
         _ => panic!("Unexpected data point"),
     }
 }
@@ -178,7 +183,7 @@ fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> 
     exact_scores
 }
 
-fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
+fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool, seed: u64) -> ErrorDataPoint {
     let fbas = fbas_type.make_one(input.top_tier_size);
     assert!(fbas.number_of_nodes() == input.top_tier_size);
     let size = fbas.number_of_nodes();
@@ -190,7 +195,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_1 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(1)),
+        RankingAlg::PowerIndexApprox(10usize.pow(1), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_1, median_abs_error_10_pow_1, mean_abs_percentage_error_10_pow_1) =
@@ -202,7 +207,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_2 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(2)),
+        RankingAlg::PowerIndexApprox(10usize.pow(2), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_2, median_abs_error_10_pow_2, mean_abs_percentage_error_10_pow_2) =
@@ -214,7 +219,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_3 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(3)),
+        RankingAlg::PowerIndexApprox(10usize.pow(3), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_3, median_abs_error_10_pow_3, mean_abs_percentage_error_10_pow_3) =
@@ -226,7 +231,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_4 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(4)),
+        RankingAlg::PowerIndexApprox(10usize.pow(4), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_4, median_abs_error_10_pow_4, mean_abs_percentage_error_10_pow_4) =
@@ -238,7 +243,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_5 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(5)),
+        RankingAlg::PowerIndexApprox(10usize.pow(5), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_5, median_abs_error_10_pow_5, mean_abs_percentage_error_10_pow_5) =
@@ -250,7 +255,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_6 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(6)),
+        RankingAlg::PowerIndexApprox(10usize.pow(6), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_6, median_abs_error_10_pow_6, mean_abs_percentage_error_10_pow_6) =
@@ -262,7 +267,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_7 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(7)),
+        RankingAlg::PowerIndexApprox(10usize.pow(7), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_7, median_abs_error_10_pow_7, mean_abs_percentage_error_10_pow_7) =
@@ -274,7 +279,7 @@ fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool) -> ErrorData
     );
     let approx_power_indices_10_pow_8 = rank_nodes(
         &fbas,
-        RankingAlg::PowerIndexApprox(10usize.pow(8)),
+        RankingAlg::PowerIndexApprox(10usize.pow(8), seed),
         qi_check,
     );
     let (mean_abs_error_10_pow_8, median_abs_error_10_pow_8, mean_abs_percentage_error_10_pow_8) =

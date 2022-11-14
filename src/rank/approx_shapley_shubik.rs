@@ -1,7 +1,7 @@
 use crate::*;
 use bit_set::BitSet;
 use fbas_analyzer::{Fbas, NodeId};
-use rand::seq::SliceRandom;
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 
 impl<'a> CooperativeGame<'a> {
     /// Calculates an approximation of the Shapley-Shubik Index for the players of the game using
@@ -13,6 +13,7 @@ impl<'a> CooperativeGame<'a> {
         &self,
         num_samples: usize,
         qi_check: bool,
+        seed: u64,
     ) -> Vec<Score> {
         if qi_check {
             println!("Ensuring the FBAS has quorum intersection.");
@@ -22,7 +23,7 @@ impl<'a> CooperativeGame<'a> {
             );
         }
         println!("Starting calculation of power indices via approximation.");
-        let sample_permutations = generate_sample_permutations(num_samples, &self.players);
+        let sample_permutations = generate_sample_permutations(num_samples, &self.players, seed);
         let power_indices: Vec<Score> = self
             .players
             .iter()
@@ -86,14 +87,16 @@ fn compute_player_i_marginal_contribution(player: usize, pred: &[usize], fbas: &
 fn generate_sample_permutations(
     no_samples: usize,
     players: &[NodeId],
+    seed: u64,
 ) -> (impl IntoIterator<Item = Vec<NodeId>> + Clone) {
+    let mut rng = StdRng::seed_from_u64(seed);
     let mut grand_coalition: Vec<usize> = players.into();
     // Complexity 0(n) per shuffle
     (0..no_samples)
         .collect::<Vec<_>>()
         .into_iter()
         .map(move |_| {
-            grand_coalition.shuffle(&mut rand::thread_rng());
+            grand_coalition.shuffle(&mut rng);
             grand_coalition.clone()
         })
 }
@@ -107,9 +110,13 @@ mod tests {
 
     #[test]
     fn generate_correct_num_of_samples() {
-        let players = vec![]; // empty vec because we are just checking for the len
-        let actual = generate_sample_permutations(6, &players);
-        assert_eq!(actual.into_iter().size_hint(), (6, Some(6)));
+        let players = [0, 1, 2, 3];
+        let seed = 1;
+        let actual: Vec<Vec<usize>> = generate_sample_permutations(3, &players, seed)
+            .into_iter()
+            .collect();
+        let expected = vec![[0, 1, 2, 3], [0, 2, 1, 3], [1, 3, 2, 0]];
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -142,7 +149,8 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = true;
         let tt = CooperativeGame::get_involved_nodes(&fbas, qi_check);
-        let samples = generate_sample_permutations(100, &tt);
+        let seed = 1;
+        let samples = generate_sample_permutations(100, &tt, seed);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
             0,
             samples.into_iter(),
@@ -159,7 +167,8 @@ mod tests {
         let fbas = Fbas::from_json_file(Path::new("test_data/trivial.json"));
         let qi_check = true;
         let tt = CooperativeGame::get_involved_nodes(&fbas, qi_check);
-        let samples = generate_sample_permutations(100, &tt);
+        let seed = 1;
+        let samples = generate_sample_permutations(100, &tt, seed);
         let actual = CooperativeGame::compute_approx_ss_power_index_for_player(
             0,
             samples.into_iter(),
@@ -177,8 +186,9 @@ mod tests {
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let samples = 100;
         let qi_check = true;
+        let seed = 1;
         let expected = vec![1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
-        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check);
+        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check, seed);
         for e in 0..expected.len() {
             assert_abs_diff_eq!(expected[e], actual[e], epsilon = 0.2f64);
         }
@@ -250,8 +260,9 @@ mod tests {
         let game = CooperativeGame::init_from_fbas(&all_nodes, &fbas);
         let samples = 100;
         let qi_check = true;
+        let seed = 1;
         let expected = vec![7.0 / 15.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0, 4.0 / 30.0];
-        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check);
+        let actual = game.compute_approx_ss_power_index_for_game(samples, qi_check, seed);
         for (i, _) in expected.iter().enumerate() {
             assert_abs_diff_eq!(expected[i], actual[i], epsilon = 0.2f64);
         }
