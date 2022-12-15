@@ -46,7 +46,7 @@ struct Cli {
     update: bool,
 
     /// Number of analysis runs per FBAS size.
-    #[structopt(short = "r", long = "runs", default_value = "10")]
+    #[structopt(short = "r", long = "runs", default_value = "30")]
     runs: usize,
 
     /// Number of threads to use. Defaults to 1.
@@ -59,6 +59,7 @@ struct Cli {
     dont_check_for_qi: bool,
 
     /// RNG seed ensuring reproducible runs
+    #[structopt(short = "s", long = "seed")]
     seed: Option<u64>,
 }
 
@@ -170,7 +171,7 @@ fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool, seed: u64) 
 fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> Vec<Score> {
     let cache_scores = get_scores_from_cache(fbas_size);
 
-    let exact_scores = if let Some(scores) = cache_scores {
+    if let Some(scores) = cache_scores {
         info!("Found power index scores for {} nodes in cache.", fbas_size);
         scores
     } else {
@@ -179,8 +180,7 @@ fn get_or_compute_truth_value(fbas_size: usize, fbas: &Fbas, qi_check: bool) -> 
         info!("Completed power index for FBAS of size {}.", fbas_size);
         add_to_cache(fbas_size, exact_power_index.clone());
         exact_power_index
-    };
-    exact_scores
+    }
 }
 
 fn rank(input: InputDataPoint, fbas_type: FbasType, qi_check: bool, seed: u64) -> ErrorDataPoint {

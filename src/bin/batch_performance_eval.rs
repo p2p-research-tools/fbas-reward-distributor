@@ -184,7 +184,11 @@ fn rank_fbas(input: InputDataPoint, fbas: &Fbas, alg: RankingAlg, qi_check: bool
         "Starting {:?} run {} for FBAS of size {}.",
         alg, input.run, size
     );
-    let (_, duration) = timed_secs!(rank_nodes(fbas, alg.clone(), qi_check));
+    let (_, duration) = timed_secs!(fbas_reward_distributor::rank_nodes(
+        fbas,
+        alg.clone(),
+        qi_check,
+    ));
     debug!(
         "Completed {:?} run {} for FBAS of size {}.",
         alg, input.run, size

@@ -139,8 +139,11 @@ cargo build --release --features "measurements"
 ```
 target/release/performance_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE $RANKING_ALGO
 ```
+  - A seed can optionally be passed if `$RANKING_ALGO == power-index-approx`
+    which is used by the RNG when drawing samples.
+
 3. and/or approximation measurements
 
 ```
-target/release/approximation_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE
+target/release/approximation_tests -m $MAX_TOP_TIER --no-quorum-intersection -r $ITERATIONS -o $OUTPUT_FILE -j $JOBS -u $FBAS_TYPE < -s seed>
 ```
