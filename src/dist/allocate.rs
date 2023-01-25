@@ -43,10 +43,9 @@ pub fn approx_game_theory_distribution(
     fbas: &Fbas,
     reward: Reward,
     qi_check: bool,
-    seed: u64,
 ) -> Vec<(NodeId, Score, Reward)> {
     let game = new_game_from_fbas(fbas);
-    let scores = game.compute_approx_ss_power_index_for_game(num_samples, qi_check, seed);
+    let scores = game.compute_approx_ss_power_index_for_game(num_samples, qi_check);
     allocate_reward_to_players(scores, reward)
 }
 
@@ -106,9 +105,7 @@ mod tests {
         let samples = 100;
         let reward = 10.0;
         let qi_check = true;
-        let seed = 1;
-        let actual_rewards =
-            approx_game_theory_distribution(samples, &fbas, reward, qi_check, seed);
+        let actual_rewards = approx_game_theory_distribution(samples, &fbas, reward, qi_check);
         let expected_rewards = vec![
             (0, 1.0 / 3.0, reward / 3.0),
             (1, 1.0 / 3.0, reward / 3.0),

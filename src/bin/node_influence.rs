@@ -92,8 +92,7 @@ enum RankingAlgConfig {
     PowerIndexEnum,
     /// Approximate Shapley values as a measure of nodes' importance in the FBAS. The number of
     /// samples to use must be passed if selected.
-    /// Optionally pass a seed that will be used by the RNG.
-    PowerIndexApprox { s: usize, seed: Option<u64> },
+    PowerIndexApprox { s: usize },
 }
 
 fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
@@ -104,9 +103,7 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
         {
             RankingAlg::PowerIndexEnum(None)
         }
-        RankingAlgConfig::PowerIndexApprox { s, seed } => {
-            RankingAlg::PowerIndexApprox(s, seed.unwrap_or_default())
-        }
+        RankingAlgConfig::PowerIndexApprox { s } => RankingAlg::PowerIndexApprox(s),
     }
 }
 
@@ -221,8 +218,8 @@ fn distribute_rewards(
         RankingAlg::PowerIndexEnum(tt) => {
             exact_game_theory_distribution(fbas, reward_value, tt, qi_check)
         }
-        RankingAlg::PowerIndexApprox(samples, seed) => {
-            approx_game_theory_distribution(samples, fbas, reward_value, qi_check, seed)
+        RankingAlg::PowerIndexApprox(samples) => {
+            approx_game_theory_distribution(samples, fbas, reward_value, qi_check)
         }
     };
     create_reward_report(allocation, fbas, use_pks)
