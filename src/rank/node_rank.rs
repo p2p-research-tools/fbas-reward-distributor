@@ -1,6 +1,7 @@
 use crate::*;
 
 use fbas_analyzer::{Fbas, NodeId, QuorumSet};
+use log::trace;
 use std::collections::{HashMap, HashSet};
 
 /// NodeRank is an extension of PageRank proposed by Kim et al. in the paper 'Is Stellar as Secure
@@ -11,7 +12,7 @@ pub(crate) fn compute_node_rank_for_fbas(
     qi_check: bool,
 ) -> Vec<Score> {
     if qi_check {
-        println!("Ensuring the FBAS has quorum intersection.");
+        trace!("Ensuring the FBAS has quorum intersection.");
         assert!(
             fbas_analyzer::all_intersect(&fbas_analyzer::find_minimal_quorums(fbas)),
             "FBAS lacks quorum intersection!"
@@ -59,7 +60,7 @@ fn compute_node_rank(
             }
         }
         None => {
-            eprintln!("Node {} not in quorum sets..", node_id);
+            trace!("Node {} not in quorum sets..", node_id);
         }
     }
     round_to_three_places(node_rank)

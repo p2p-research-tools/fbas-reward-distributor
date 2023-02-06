@@ -1,5 +1,6 @@
 use crate::Coalition;
 use fbas_analyzer::{Fbas, NodeId};
+use log::{info, trace};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CooperativeGame<'a> {
@@ -45,14 +46,14 @@ impl<'a> CooperativeGame<'a> {
     pub(crate) fn get_involved_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
         let min_quorums = fbas_analyzer::find_minimal_quorums(fbas);
         if qi_check {
-            println!("Ensuring the FBAS has quorum intersection.");
+            trace!("Ensuring the FBAS has quorum intersection.");
             assert!(
                 fbas_analyzer::all_intersect(&min_quorums),
                 "FBAS lacks quorum intersection!"
             );
-            println!("FBAS enjoys quorum intersection!");
+            info!("FBAS enjoys quorum intersection!");
         } else {
-            println!("Skipping quorum intersection check.");
+            trace!("Skipping quorum intersection check.");
         }
         fbas_analyzer::involved_nodes(&min_quorums)
             .into_iter()

@@ -1,6 +1,7 @@
 use crate::*;
 use bit_set::BitSet;
 use fbas_analyzer::{Fbas, NodeId};
+use log::{info, trace};
 use rand::seq::SliceRandom;
 
 impl<'a> CooperativeGame<'a> {
@@ -15,13 +16,13 @@ impl<'a> CooperativeGame<'a> {
         qi_check: bool,
     ) -> Vec<Score> {
         if qi_check {
-            println!("Ensuring the FBAS has quorum intersection.");
+            trace!("Ensuring the FBAS has quorum intersection.");
             assert!(
                 fbas_analyzer::all_intersect(&fbas_analyzer::find_minimal_quorums(self.fbas)),
                 "FBAS lacks quorum intersection!"
             );
         }
-        println!("Starting calculation of power indices via approximation.");
+        info!("Starting calculation of power indices via approximation.");
         let sample_permutations = generate_sample_permutations(num_samples, &self.players);
         let power_indices: Vec<Score> = self
             .players

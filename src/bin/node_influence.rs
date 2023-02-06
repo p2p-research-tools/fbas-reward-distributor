@@ -3,6 +3,8 @@ use fbas_reward_distributor::*;
 
 use structopt::StructOpt;
 
+use env_logger::Env;
+use log::info;
 use std::path::PathBuf;
 
 /// Rank nodes of an FBAS and allocate rewards to them accordingly
@@ -49,6 +51,9 @@ struct RankCmds {
     /// Default behaviour is to always check for QI.
     #[structopt(short = "nq", long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    #[structopt(long = "log", short = "l", default_value = "info")]
+    log_level: String,
 }
 
 /// Compute a distribution based on ranking according to selected algorithm
@@ -81,6 +86,9 @@ struct DistCmds {
     /// Default behaviour is to always check for QI.
     #[structopt(long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    #[structopt(long = "log", short = "l", default_value = "info")]
+    log_level: String,
 }
 
 #[derive(Debug, StructOpt)]
@@ -110,15 +118,15 @@ fn get_ranking_alg_from_params(cfg: RankingAlgConfig) -> RankingAlg {
 fn get_top_tier_nodes(fbas: &Fbas, qi_check: bool) -> Vec<NodeId> {
     let min_qs = fbas_analyzer::find_minimal_quorums(fbas);
     if qi_check {
-        println!("Ensuring the FBAS has quorum intersection.");
+        info!("Ensuring the FBAS has quorum intersection.");
         assert!(
             fbas_analyzer::all_intersect(&min_qs),
             "FBAS lacks quorum intersection!"
         );
-        println!("FBAS enjoys quorum intersection!");
+        info!("FBAS enjoys quorum intersection!");
     }
     let involved_nodes: Vec<NodeId> = fbas_analyzer::involved_nodes(&min_qs).into_iter().collect();
-    println!("Computed top tier with {} nodes.", involved_nodes.len());
+    info!("Computed top tier with {} nodes.", involved_nodes.len());
     involved_nodes
 }
 
@@ -132,6 +140,11 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
+            let log_level = cmd.log_level;
+            let env = Env::default()
+                .filter_or("MY_LOG_LEVEL", log_level)
+                .write_style_or("MY_LOG_STYLE", "always");
+            env_logger::init_from_env(env);
             let mut alg = get_ranking_alg_from_params(alg_cfg);
             alg = match alg {
                 RankingAlg::PowerIndexEnum(_) => {
@@ -140,7 +153,7 @@ fn main() {
                 _ => alg,
             };
             let rankings = compute_influence(&node_ids, &fbas, alg, use_pks, qi_check);
-            println!("List of Rankings as (NodeId, PK, Score):\n {:?}", rankings);
+            println!("List of Rankings as (NodeId, PK, Score):\n {rankings:?}");
         }
         SubCommand::Distribute(cmd) => {
             let ignore_inactive_nodes = cmd.ignore_inactive_nodes;
@@ -150,6 +163,11 @@ fn main() {
             let fbas = load_fbas(cmd.nodes_path.as_ref(), ignore_inactive_nodes);
             let node_ids: Vec<NodeId> = (0..fbas.all_nodes().len()).collect();
             let qi_check = !cmd.dont_check_for_qi;
+            let log_level = cmd.log_level;
+            let env = Env::default()
+                .filter_or("MY_LOG_LEVEL", log_level)
+                .write_style_or("MY_LOG_STYLE", "always");
+            env_logger::init_from_env(env);
             let mut alg = get_ranking_alg_from_params(alg_cfg);
             alg = match alg {
                 RankingAlg::PowerIndexEnum(_) => {
@@ -159,17 +177,14 @@ fn main() {
             };
             let allocation =
                 distribute_rewards(alg, &node_ids, &fbas, total_reward, use_pks, qi_check);
-            println!(
-                "List of Distributions as (NodeId, PK, Score, Reward):\n {:?}",
-                allocation
-            );
+            println!("List of Distributions as (NodeId, PK, Score, Reward):\n {allocation:?}");
         }
     };
 }
 
 fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fbas {
     let fbas = if let Some(nodes_path) = o_nodes_path {
-        eprintln!("Reading FBAS JSON from file...");
+        info!("Reading FBAS JSON from file...");
         let mut fbas = Fbas::from_json_file(nodes_path);
         if ignore_inactive_nodes {
             let inactive_nodes =
@@ -178,7 +193,7 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
         }
         fbas
     } else {
-        eprintln!("Reading FBAS JSON from STDIN...");
+        info!("Reading FBAS JSON from STDIN...");
         if ignore_inactive_nodes {
             panic!(
                 "Ignoring nodes is currently not supported when reading an FBAS from STDIN;
@@ -187,7 +202,7 @@ fn load_fbas(o_nodes_path: Option<&PathBuf>, ignore_inactive_nodes: bool) -> Fba
         }
         Fbas::from_json_stdin()
     };
-    eprintln!("Loaded FBAS with {} nodes.", fbas.number_of_nodes());
+    info!("Loaded FBAS with {} nodes.", fbas.number_of_nodes());
     fbas
 }
 

@@ -13,7 +13,7 @@ fn mean_abs_error(approximation: &[Score], truth: &[Score]) -> f64 {
     let mut mean_error = 0.0;
     assert!(approximation.len() == truth.len());
     for (i, value) in approximation.iter().enumerate() {
-        let error: f64 = ((truth[i] - value) as f64).abs();
+        let error: f64 = (truth[i] - value).abs();
         mean_error += error;
     }
     mean_error /= approximation.len() as f64;
@@ -24,7 +24,7 @@ fn median_abs_error(approximation: &[f64], truth: &[f64]) -> f64 {
     let mut abs_diff_pred_true: Vec<f64> = Vec::default();
     assert!(approximation.len() == truth.len());
     for (i, value) in approximation.iter().enumerate() {
-        let abs_diff: f64 = ((value - truth[i]) as f64).abs();
+        let abs_diff: f64 = (value - truth[i]).abs();
         abs_diff_pred_true.push(abs_diff);
     }
     abs_diff_pred_true.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -38,7 +38,7 @@ fn mean_abs_pctg_error(approximation: &[f64], truth: &[f64]) -> f64 {
     let epsilon: f64 = f64::EPSILON; //  is an arbitrary small yet strictly positive number to avoid undefined results when y is zero
     let mut average_percentage_error = 0.0;
     for (i, value) in approximation.iter().enumerate() {
-        let abs_diff: f64 = ((truth[i] - value) as f64).abs();
+        let abs_diff: f64 = (truth[i] - value).abs();
         let max = epsilon.max(truth[i]);
         average_percentage_error += abs_diff / max;
     }

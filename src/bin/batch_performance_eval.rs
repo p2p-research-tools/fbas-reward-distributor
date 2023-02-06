@@ -2,7 +2,7 @@ use fbas_analyzer::*;
 use fbas_reward_distributor::*;
 
 use env_logger::Env;
-use log::{debug, info};
+use log::{debug, info, trace};
 use par_map::ParMap;
 use std::{collections::BTreeMap, error::Error, io, path::PathBuf};
 use structopt::StructOpt;
@@ -44,6 +44,9 @@ struct Cli {
     /// Default behaviour is to always check for QI.
     #[structopt(long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    #[structopt(long = "log", short = "l", default_value = "info")]
+    log_level: String,
 }
 
 #[derive(Debug, StructOpt)]
@@ -68,9 +71,10 @@ enum RankingAlgConfig {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::from_args();
+    let log_level = args.log_level;
     let env = Env::default()
-        .filter_or("LOG_LEVEL", "info")
-        .write_style_or("LOG_STYLE", "always");
+        .filter_or("MY_LOG_LEVEL", log_level)
+        .write_style_or("MY_LOG_STYLE", "always");
     env_logger::init_from_env(env);
     let fbas_type = args.run_config.fbas_type;
     let ranking_alg = match args.run_config.ranking_alg {
@@ -89,7 +93,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let qi_check = !args.dont_check_for_qi;
     let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check, ranking_alg);
-    println!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
+    info!("Starting performance measurements for {:?} like FBAS with upto {} nodes.\n Performing {} iterations per FBAS.",fbas_type, args.max_top_tier_size, args.runs);
 
     write_csv(output_iterator, &args.output_path, args.update)?;
     Ok(())
@@ -165,9 +169,10 @@ fn analyze_or_reuse(
 ) -> PerfDataPoint {
     match task {
         Task::ReusePerfData(output) => {
-            eprintln!(
+            trace!(
                 "Reusing existing analysis results for m={}, run={}.",
-                output.top_tier_size, output.run
+                output.top_tier_size,
+                output.run
             );
             output
         }

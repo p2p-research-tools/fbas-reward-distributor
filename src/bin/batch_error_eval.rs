@@ -3,7 +3,7 @@ use fbas_reward_distributor::*;
 use env_logger::Env;
 use fbas_analyzer::Fbas;
 use lazy_static::lazy_static;
-use log::info;
+use log::{info, trace};
 use par_map::ParMap;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -57,13 +57,17 @@ struct Cli {
     /// Default behaviour is to always check for QI.
     #[structopt(long = "no-quorum-intersection")]
     dont_check_for_qi: bool,
+
+    #[structopt(long = "log", short = "l", default_value = "info")]
+    log_level: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::from_args();
+    let log_level = args.log_level;
     let env = Env::default()
-        .filter_or("LOG_LEVEL", "info")
-        .write_style_or("LOG_STYLE", "always");
+        .filter_or("MY_LOG_LEVEL", log_level)
+        .write_style_or("MY_LOG_STYLE", "always");
     env_logger::init_from_env(env);
     let fbas_type = args.fbas_type;
     let inputs: Vec<InputDataPoint> =
@@ -77,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let qi_check = !args.dont_check_for_qi;
     let output_iterator = bulk_do(tasks, args.jobs, fbas_type.clone(), qi_check);
-    println!(
+    info!(
         "Starting measurements for {:?} like FBAS with upto {} nodes.\n
              Performing {} iterations per FBAS.",
         fbas_type, args.max_top_tier_size, args.runs
@@ -151,9 +155,10 @@ fn bulk_do(
 fn analyze_or_reuse(task: Task, fbas_type: FbasType, qi_check: bool) -> ErrorDataPoint {
     match task {
         Task::ReuseErrorData(output) => {
-            eprintln!(
+            trace!(
                 "Reusing existing analysis results for m={}, run={}.",
-                output.top_tier_size, output.run
+                output.top_tier_size,
+                output.run
             );
             output
         }

@@ -1,6 +1,7 @@
 use crate::*;
 use fbas_analyzer::NodeId;
 use itertools::Itertools;
+use log::info;
 use rug::Integer;
 use std::collections::{HashMap, HashSet};
 
@@ -13,12 +14,12 @@ impl<'a> CooperativeGame<'a> {
         // Because the TT is computed out of this function, we assume the check for     QI has
         // already been done if we got this far
         let top_tier = if let Some(tt) = self.top_tier.clone() {
-            println!("Game already initialised with involved nodes..");
+            info!("Game already initialised with involved nodes..");
             tt
         } else {
             Self::get_involved_nodes(self.fbas, qi_check)
         };
-        println!("Starting calculation of power indices via enumeration.");
+        info!("Starting calculation of power indices via enumeration.");
         let num_players = top_tier.len();
         let total_factorial = n_factorial(top_tier.len());
         let winning_coalitions = self.find_winning_coalitions(&top_tier);
