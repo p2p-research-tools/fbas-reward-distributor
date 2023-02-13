@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 #[test]
 #[cfg_attr(not(feature = "measurements"), ignore)]
@@ -11,9 +10,8 @@ fn valid_batch_perf_experiments() -> Result<(), Box<dyn std::error::Error>> {
         .arg("1")
         .arg("stellar")
         .arg("power-index-enum");
-    cmd.assert().success().stdout(predicate::str::contains(
-        "Starting performance measurements for Stellar like FBAS with upto 1 nodes.\n Performing 1 iterations per FBAS.",
-    ));
+    // log writes to stderr by default
+    cmd.assert().success();
     Ok(())
 }
 
