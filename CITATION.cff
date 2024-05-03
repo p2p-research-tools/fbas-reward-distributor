@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+title: "Fair Reward Distribution in Federated Byzantine Agreement Systems"
+repository-code: 'https://github.com/cndolo/fbas-reward-distributor'
+type: inproceedings
+authors:
+  - given-names: Charmaine
+    family-names: Ndolo
+    affiliation: Humboldt University of Berlin
+  - given-names: Martin
+    family-names: Florian
+    affiliation: Humboldt University of Berlin / Weizenbaum Institute
+  - given-names: Florian
+    family-names: Tschorsch
+    affiliation: Humboldt University of Berlin
+booktitle: "5th Conference on Blockchain Research & Applications for Innovative Networks and Services (BRAINS)"
+year: 2023
+publisher: "IEEE"
+doi: 10.1109/BRAINS59668.2023.10316929
