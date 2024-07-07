@@ -1,9 +1,9 @@
 # FBAS Reward Distributor
 
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
-[![CI](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml/badge.svg)](https://github.com/cndolo/fbas-reward-distributor/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/cndolo/fbas-reward-distributor/branch/main/graph/badge.svg?token=QZH345MHCJ)](https://codecov.io/gh/cndolo/fbas-reward-distributor)
-[![dependency status](https://deps.rs/repo/github/cndolo/fbas-reward-distributor/status.svg)](https://deps.rs/repo/github/cndolo/fbas-reward-distributor)
+[![CI](https://github.com/p2p-research-tools/fbas-reward-distributor/actions/workflows/test.yml/badge.svg)](https://github.com/p2p-research-tools/fbas-reward-distributor/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/p2p-research-tools/fbas-reward-distributor/branch/main/graph/badge.svg?token=QZH345MHCJ)](https://codecov.io/gh/p2p-research-tools/fbas-reward-distributor)
+[![dependency status](https://deps.rs/repo/github/p2p-research-tools/fbas-reward-distributor/status.svg)](https://deps.rs/repo/github/p2p-research-tools/fbas-reward-distributor)
 
 Framework for the computation of a node's influence and reward distribution in
 a Federated Byzantine Agreement Systems (FBASs) like
@@ -77,10 +77,10 @@ The output is always a sorted list of tuples: (NodeID, Public Key (where availab
 
 ```
 [dependencies]
-fbas-reward-distributor = { git = "https://github.com/cndolo/fbas-reward-distributor", default-features = true}
+fbas-reward-distributor = { git = "https://github.com/p2p-research-tools/fbas-reward-distributor", default-features = true}
 ```
 
-See the [fbas-graph-generator](https://github.com/cndolo/fbas-graph-generator) for some examples.
+See the [fbas-graph-generator](https://github.com/p2p-research-tools/fbas-graph-generator) for some examples.
 
 ## Performance and approximation measurements
 
